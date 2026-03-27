@@ -24,12 +24,19 @@ def main():
 @main.command()
 @click.argument("query")
 @click.option("--mode", default="vote", type=click.Choice(["vote", "critique", "adaptive", "escalate"]))
+@click.option("--preset", default="eva", help="Persona preset (eva, code-review, research, writing, strategy)")
 @click.option("--melchior", default="claude-sonnet-4-6", help="Model for Melchior node")
 @click.option("--balthasar", default="gpt-4o", help="Model for Balthasar node")
 @click.option("--casper", default="gemini/gemini-2.5-pro", help="Model for Casper node")
-def ask(query: str, mode: str, melchior: str, balthasar: str, casper: str):
+def ask(query: str, mode: str, preset: str, melchior: str, balthasar: str, casper: str):
     """Ask MAGI a question. Three models deliberate, one decision emerges."""
-    engine = MAGI(melchior=melchior, balthasar=balthasar, casper=casper)
+    from magi.presets import get_preset
+    try:
+        personas = get_preset(preset)
+    except KeyError as e:
+        click.echo(str(e), err=True)
+        sys.exit(1)
+    engine = MAGI(melchior=melchior, balthasar=balthasar, casper=casper, personas=personas)
     try:
         decision = asyncio.run(engine.ask(query, mode=mode))
     except AuthenticationError as e:
@@ -73,19 +80,12 @@ def diff(file: str | None, staged: bool, melchior: str, balthasar: str, casper: 
         click.echo(f"Error: {e}", err=True)
         sys.exit(1)
 
-    # Use code-review personas
-    from magi.core.node import Persona
-    code_personas = (
-        Persona("Security Analyst", "You focus on security vulnerabilities, injection risks, auth issues, and data exposure."),
-        Persona("Performance Engineer", "You focus on performance bottlenecks, N+1 queries, memory leaks, and scalability."),
-        Persona("Code Quality Reviewer", "You focus on readability, maintainability, DRY violations, and best practices."),
-    )
-
+    from magi.presets import get_preset
     engine = MAGI(
         melchior=melchior,
         balthasar=balthasar,
         casper=casper,
-        personas=code_personas,
+        personas=get_preset("code-review"),
     )
 
     prompt = build_review_prompt(diff_text)
@@ -125,6 +125,15 @@ def judge(question: str, answer: str, melchior: str, balthasar: str, casper: str
         sys.exit(1)
 
     click.echo(format_judge_output(decision))
+
+
+@main.command()
+def presets():
+    """List available persona presets."""
+    from magi.presets import PRESETS
+    for name, personas in sorted(PRESETS.items()):
+        names = " / ".join(p.name for p in personas)
+        click.echo(f"  {name:15s} {names}")
 
 
 if __name__ == "__main__":
