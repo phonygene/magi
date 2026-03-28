@@ -63,9 +63,9 @@ async def ws_ask(ws: WebSocket):
     mode = data.get("mode", "adaptive")
     preset_name = data.get("preset", "eva")
 
-    melchior_model = data.get("melchior", "openrouter/anthropic/claude-sonnet-4.6")
-    balthasar_model = data.get("balthasar", "openrouter/openai/gpt-4o")
-    casper_model = data.get("casper", "openrouter/google/gemini-2.5-pro")
+    melchior_model = data.get("melchior", os.environ.get("MAGI_MELCHIOR", "openrouter/deepseek/deepseek-v3.2"))
+    balthasar_model = data.get("balthasar", os.environ.get("MAGI_BALTHASAR", "openrouter/xiaomi/mimo-v2-pro"))
+    casper_model = data.get("casper", os.environ.get("MAGI_CASPER", "openrouter/minimax/minimax-m2.7"))
 
     try:
         personas = get_preset(preset_name)
