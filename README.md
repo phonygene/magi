@@ -4,6 +4,8 @@ Three models. One decision. Inspired by the [MAGI supercomputer](https://evangel
 
 MAGI is not another agent framework. It is a **structured disagreement engine**: the same question goes to three different LLMs, each with a different perspective. They vote, debate, and critique each other to produce a Decision Dossier with the ruling, confidence, minority report, and full trace.
 
+![NERV Command Center](docs/nerv-dashboard.png)
+
 ## Why?
 
 > Three cheap models using MAGI critique mode scored **88%** on our benchmark.
