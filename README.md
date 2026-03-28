@@ -14,6 +14,31 @@ MAGI is not another agent framework. It is a **structured disagreement engine**:
 
 The value is not "more accurate answers." It is **better decision quality**: seeing where models agree, where they disagree, and why.
 
+## How MAGI Differs
+
+There are several EVA-inspired multi-model projects. Here's what makes this one different.
+
+**Other projects do voting.** Three models answer, pick the majority. That's it.
+
+**MAGI does structured disagreement.** Models don't just answer in parallel. They read each other's answers, critique the reasoning, and revise their positions across multiple rounds. The system tracks who changed their mind and why.
+
+| Capability | Voting projects | MAGI |
+|---|---|---|
+| Multi-model query | Yes | Yes |
+| Majority vote | Yes | Yes |
+| **Multi-round critique (ICE)** | No | Yes |
+| **Mind change tracking** | No | Yes |
+| **Adaptive protocol selection** | No | Yes |
+| **Minority report / dissent analysis** | No | Yes |
+| **Benchmark: ensemble > single model** | No | Yes (88% > 76%) |
+| **Fault tolerance (node failures)** | No | Yes |
+| **NERV hexagonal dashboard** | No | Yes |
+| **CLI toolchain (diff, judge, bench)** | No | Yes |
+
+The key finding: **vote alone (72%) does not beat a single strong model (76%)**. Every voting-only project hits this ceiling. MAGI's critique mode breaks through it (88%) by letting models catch each other's mistakes.
+
+A NeurIPS 2025 paper ([Debate or Vote](https://arxiv.org/abs/2508.17536)) found that "debate doesn't systematically improve beliefs." But their debate asks models to persuade humans. MAGI's ICE protocol asks models to find errors in each other's reasoning. Different mechanism, different result.
+
 ## Install
 
 ```bash
