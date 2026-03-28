@@ -798,6 +798,16 @@ function escHtml(s) {
 document.getElementById('queryInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); execute(); }
 });
+
+// Load default models on page load
+fetch('/api/defaults').then(r => r.json()).then(data => {
+  ['melchior','balthasar','casper'].forEach(n => {
+    const cap = n.charAt(0).toUpperCase() + n.slice(1);
+    const model = data[n] || '—';
+    const short = model.split('/').pop().replace(':free','');
+    document.getElementById(`model${cap}`).textContent = short;
+  });
+}).catch(() => {});
 </script>
 </body>
 </html>

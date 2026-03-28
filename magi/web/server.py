@@ -26,6 +26,15 @@ async def index():
     return FileResponse(str(STATIC_DIR / "index.html"))
 
 
+@app.get("/api/defaults")
+async def api_defaults():
+    return {
+        "melchior": os.environ.get("MAGI_MELCHIOR", "openrouter/deepseek/deepseek-v3.2"),
+        "balthasar": os.environ.get("MAGI_BALTHASAR", "openrouter/xiaomi/mimo-v2-pro"),
+        "casper": os.environ.get("MAGI_CASPER", "openrouter/minimax/minimax-m2.7"),
+    }
+
+
 @app.get("/api/presets")
 async def api_presets():
     return {
