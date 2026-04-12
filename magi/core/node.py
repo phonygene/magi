@@ -29,6 +29,7 @@ class MagiNode:
         self.model = model
         self.persona = persona
         self.timeout = timeout
+        self.last_cost_usd: float = 0.0  # Cost tracking per call
 
     async def query(self, prompt: str) -> str:
         """Send a query to this node's LLM. Returns the response text or raises on failure."""
@@ -51,6 +52,13 @@ class MagiNode:
                 content = msg.reasoning_content
             if not content or not content.strip():
                 raise ValueError(f"Node {self.name} returned empty response")
+
+            # Track cost via litellm
+            try:
+                self.last_cost_usd = litellm.completion_cost(completion_response=response)
+            except Exception:
+                self.last_cost_usd = 0.0
+
             return content.strip()
         except asyncio.TimeoutError:
             raise TimeoutError(f"Node {self.name} ({self.model}) timed out after {self.timeout}s")

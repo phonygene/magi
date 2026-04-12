@@ -13,6 +13,9 @@ authors = [{ name = "Eric Chen" }]
 dependencies = [
     "litellm>=1.0.0,!=1.82.7,!=1.82.8",
     "click>=8.0",
+    "python-dotenv>=1.0.0",
+    "matplotlib>=3.10.8",
+    "numpy",
 ]
 
 [project.optional-dependencies]

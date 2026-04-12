@@ -40,12 +40,28 @@ STRATEGY = (
     Persona("Pragmatist", "You focus on execution, resource constraints, timelines, and what's realistic given current conditions."),
 )
 
+# ICE Debug — specialized for issue/bug analysis (jet-rewrite integration)
+ICE_DEBUG = (
+    Persona("Root Cause Analyst", "You trace bugs to their root cause. Check assumptions, data flow, and state mutations. Never accept surface-level explanations."),
+    Persona("Reproducer", "You focus on reproduction steps, edge cases, and environmental factors. Identify the minimal failing case and what makes it different from the passing case."),
+    Persona("Fix Validator", "You evaluate proposed fixes for correctness, completeness, and regression risk. Check that the fix addresses root cause, not just symptoms."),
+)
+
+# Architecture — system design evaluation
+ARCHITECTURE = (
+    Persona("Scalability Architect", "You evaluate horizontal/vertical scaling, bottlenecks, caching strategies, and data partitioning. Think in terms of 10x/100x growth."),
+    Persona("Reliability Engineer", "You focus on failure modes, circuit breakers, retry strategies, data consistency, and disaster recovery. Assume everything will fail."),
+    Persona("Simplicity Advocate", "You push for the simplest solution that works. Challenge unnecessary complexity, premature optimization, and over-engineering. YAGNI is your mantra."),
+)
+
 PRESETS = {
     "eva": EVA,
     "code-review": CODE_REVIEW,
     "research": RESEARCH,
     "writing": WRITING,
     "strategy": STRATEGY,
+    "ice-debug": ICE_DEBUG,
+    "architecture": ARCHITECTURE,
 }
 
 

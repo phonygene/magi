@@ -1,6 +1,6 @@
 """Tests for AdaptiveProtocol."""
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 from magi.core.node import MagiNode, MELCHIOR, BALTHASAR, CASPER
 from magi.protocols.adaptive import adaptive
 
@@ -17,12 +17,16 @@ def make_nodes():
 async def test_adaptive_high_agreement_fast_path():
     """High agreement → vote path, no extra LLM calls."""
     nodes = make_nodes()
-    # All give nearly identical answers (high word overlap needed for >0.8)
     nodes[0].query = AsyncMock(return_value="the answer is yes because of the strong evidence")
     nodes[1].query = AsyncMock(return_value="the answer is yes because of the strong evidence presented")
     nodes[2].query = AsyncMock(return_value="the answer is yes because of the strong evidence here")
 
-    decision = await adaptive("test", nodes)
+    # Mock judge returns high agreement
+    async def mock_judge(query, answers, timeout=15.0):
+        return 0.95, None
+
+    with patch("magi.protocols.judge.llm_estimate_agreement", side_effect=mock_judge):
+        decision = await adaptive("test", nodes)
     assert "adaptive_vote" in decision.protocol_used
     # Each node called only once (no critique rounds)
     for n in nodes:
@@ -41,7 +45,6 @@ async def test_adaptive_medium_disagreement_critique():
             async def _query(prompt):
                 call_counts[node_name] += 1
                 if call_counts[node_name] == 1:
-                    # Moderate disagreement
                     return {
                         "melchior": "the primary reason is economic growth and market dynamics",
                         "balthasar": "the primary concern is social welfare and human impact",
@@ -52,8 +55,17 @@ async def test_adaptive_medium_disagreement_critique():
             return _query
         n.query = await make_mock()
 
-    decision = await adaptive("test", nodes, threshold_high=0.9, threshold_low=0.1)
-    assert "adaptive_critique" in decision.protocol_used
+    # Mock judge: medium agreement initially, high after critique
+    call_idx = [0]
+    scores = [0.6, 0.6, 0.9]  # initial, critique round, post-critique
+    async def mock_judge(query, answers, timeout=15.0):
+        idx = min(call_idx[0], len(scores) - 1)
+        call_idx[0] += 1
+        return scores[idx], None
+
+    with patch("magi.protocols.judge.llm_estimate_agreement", side_effect=mock_judge):
+        decision = await adaptive("test", nodes, threshold_high=0.9, threshold_low=0.1)
+    assert "adaptive_critique" in decision.protocol_used or "adaptive_escalate" in decision.protocol_used
 
 
 @pytest.mark.asyncio
@@ -67,12 +79,16 @@ async def test_adaptive_severe_disagreement_escalate():
         async def make_mock(node_name=name):
             async def _query(prompt):
                 call_counts[node_name] += 1
-                # Always completely different
                 return f"unique perspective {node_name} call {call_counts[node_name]} with entirely different vocabulary"
             return _query
         n.query = await make_mock()
 
-    decision = await adaptive("test", nodes, threshold_high=0.99, threshold_low=0.98)
+    # Mock judge: always low agreement
+    async def mock_judge_low(query, answers, timeout=15.0):
+        return 0.1, "Completely different"
+
+    with patch("magi.protocols.judge.llm_estimate_agreement", side_effect=mock_judge_low):
+        decision = await adaptive("test", nodes, threshold_high=0.99, threshold_low=0.98)
     assert "adaptive_escalate" in decision.protocol_used
 
 

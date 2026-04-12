@@ -1,8 +1,18 @@
 """Tests for CritiqueProtocol (ICE)."""
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch, MagicMock
 from magi.core.node import MagiNode, MELCHIOR, BALTHASAR, CASPER
-from magi.protocols.critique import critique, _estimate_agreement
+from magi.protocols.critique import critique
+
+
+def _mock_judge_response(score: float = 0.9, dissent: str = "none"):
+    """Create a mock LLM response for the judge."""
+    resp = MagicMock()
+    resp.choices = [MagicMock()]
+    resp.choices[0].message.content = (
+        f"CONCLUSION: yes\nAGREEMENT_SCORE: {score}\nDISSENT_SUMMARY: {dissent}"
+    )
+    return resp
 
 
 def make_nodes():
@@ -11,30 +21,6 @@ def make_nodes():
         MagiNode("balthasar", "mock", BALTHASAR),
         MagiNode("casper", "mock", CASPER),
     ]
-
-
-class TestEstimateAgreement:
-    def test_identical_answers(self):
-        score = _estimate_agreement(["same answer", "same answer", "same answer"])
-        assert score == 1.0
-
-    def test_completely_different(self):
-        score = _estimate_agreement(["alpha beta", "gamma delta", "epsilon zeta"])
-        assert score < 0.2
-
-    def test_partial_overlap(self):
-        score = _estimate_agreement([
-            "the answer is clearly yes because of evidence",
-            "the answer is probably yes based on data",
-            "the answer is no because of other reasons",
-        ])
-        assert 0.2 < score < 0.8
-
-    def test_single_answer(self):
-        assert _estimate_agreement(["only one"]) == 1.0
-
-    def test_empty(self):
-        assert _estimate_agreement([]) == 1.0
 
 
 @pytest.mark.asyncio
@@ -57,7 +43,20 @@ async def test_critique_reaches_consensus():
     for n in nodes:
         n.query = await mock_query(n.name)
 
-    decision = await critique("test question", nodes, max_rounds=3)
+    # Mock judge: low agreement initially, high after convergence
+    judge_scores = iter([0.3, 0.95])
+    async def mock_judge(query, answers, timeout=15.0):
+        return next(judge_scores, (0.95, None)), None
+    # Flatten: mock_judge returns tuple[float, str|None] but iter gives float
+    call_idx = [0]
+    scores = [0.3, 0.95]
+    async def mock_judge_fn(query, answers, timeout=15.0):
+        idx = min(call_idx[0], len(scores) - 1)
+        call_idx[0] += 1
+        return scores[idx], None
+
+    with patch("magi.protocols.judge.llm_estimate_agreement", side_effect=mock_judge_fn):
+        decision = await critique("test question", nodes, max_rounds=3)
     assert decision.ruling is not None
     assert "critique_ice" in decision.protocol_used
     assert decision.confidence > 0  # should have some agreement
@@ -78,8 +77,15 @@ async def test_critique_max_rounds():
             return _query
         n.query = await make_mock()
 
-    decision = await critique("test", nodes, max_rounds=2)
-    assert decision.protocol_used == "critique_ice_r2"
+    # Mock judge: always low agreement
+    async def mock_judge_low(query, answers, timeout=15.0):
+        return 0.2, "Completely different answers"
+
+    with patch("magi.protocols.judge.llm_estimate_agreement", side_effect=mock_judge_low):
+        decision = await critique("test", nodes, max_rounds=2)
+    # With synthesis phase, protocol is critique_ice_synth_r2; without, critique_ice_r2
+    assert "critique_ice" in decision.protocol_used
+    assert "r2" in decision.protocol_used
 
 
 @pytest.mark.asyncio
@@ -90,7 +96,12 @@ async def test_critique_one_node_fails():
     nodes[1].query = AsyncMock(return_value="Answer from balthasar")
     nodes[2].query = AsyncMock(side_effect=TimeoutError("timeout"))
 
-    decision = await critique("test", nodes, max_rounds=1)
+    # Mock judge for 2-answer agreement
+    async def mock_judge_two(query, answers, timeout=15.0):
+        return 0.7, None
+
+    with patch("magi.protocols.judge.llm_estimate_agreement", side_effect=mock_judge_two):
+        decision = await critique("test", nodes, max_rounds=1)
     assert decision.degraded is True
     assert "casper" in decision.failed_nodes
     assert len(decision.votes) == 2
@@ -134,6 +145,15 @@ async def test_critique_detects_mind_changes():
             return _query
         n.query = await make_mock()
 
-    decision = await critique("test", nodes, max_rounds=1)
+    # Mock judge: low agreement to trigger critique, then medium after
+    call_idx = [0]
+    scores = [0.3, 0.6]
+    async def mock_judge_fn(query, answers, timeout=15.0):
+        idx = min(call_idx[0], len(scores) - 1)
+        call_idx[0] += 1
+        return scores[idx], None
+
+    with patch("magi.protocols.judge.llm_estimate_agreement", side_effect=mock_judge_fn):
+        decision = await critique("test", nodes, max_rounds=1)
     # melchior should show up as having changed mind
     assert isinstance(decision.mind_changes, list)

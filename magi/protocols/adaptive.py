@@ -12,7 +12,7 @@ import asyncio
 import time
 
 from magi.core.decision import Decision
-from magi.protocols.critique import critique, _estimate_agreement
+from magi.protocols.critique import critique, estimate_agreement
 
 
 async def adaptive(
@@ -34,7 +34,7 @@ async def adaptive(
     """
     start = time.monotonic()
 
-    # Step 1: parallel query all nodes (same as vote round 0)
+    # Step 1: parallel query all nodes
     tasks = {node.name: asyncio.create_task(node.query(query)) for node in nodes}
 
     results: dict[str, str] = {}
@@ -63,9 +63,9 @@ async def adaptive(
             latency_ms=int((time.monotonic() - start) * 1000),
         )
 
-    # Step 2: compute agreement
+    # Step 2: compute agreement (using improved bigram heuristic)
     answers = list(results.values())
-    agreement = _estimate_agreement(answers)
+    agreement = await estimate_agreement(answers, query=query)
 
     # Step 3: route
     if agreement >= threshold_high:
@@ -90,7 +90,7 @@ async def adaptive(
         )
 
     if agreement >= threshold_low:
-        # Medium disagreement → critique (up to 3 rounds)
+        # Medium disagreement → critique with ICE error-detection (up to 3 rounds)
         active_nodes = [n for n in nodes if n.name not in failed]
         decision = await critique(query, active_nodes, max_rounds=3)
         decision.protocol_used = f"adaptive_critique_{decision.protocol_used}"

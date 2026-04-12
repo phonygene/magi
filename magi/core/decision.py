@@ -15,6 +15,7 @@ class Decision:
     failed_nodes: list[str] = field(default_factory=list)
     latency_ms: int = 0
     cost_usd: float = 0.0
+    cost_mode: str = "measured"  # measured | estimated | unavailable
     trace_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
 
     def to_jsonl(self) -> str:

@@ -20,6 +20,7 @@
     --green: #00dd66;
     --red: #ff2222;
     --red-dim: #881111;
+    --synth-purple: #bb66ff;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -47,17 +48,26 @@
 
   /* LEFT PANEL */
   .sys-panel {
-    width: 200px; padding: 12px; border-right: 1px solid var(--orange-dim);
+    width: 220px; padding: 12px; border-right: 1px solid var(--orange-dim);
     font-size: 11px; flex-shrink: 0; display: flex; flex-direction: column;
+    overflow-y: auto;
   }
-  .sys-panel .code-block { color: var(--orange); margin-bottom: 12px; }
+  .sys-panel .code-block { color: var(--orange); margin-bottom: 10px; }
   .sys-panel .label { color: var(--orange-dim); font-size: 8px; letter-spacing: 2px; margin-bottom: 2px; }
   .sys-panel .value { font-size: 14px; font-family: 'Orbitron', sans-serif; font-weight: 700; }
-  .mode-select {
+  .mode-select, .model-input {
     background: #111; border: 1px solid var(--orange-dim); color: var(--orange);
-    font-family: 'Share Tech Mono', monospace; font-size: 11px; padding: 5px 6px; width: 100%; margin-top: 4px;
+    font-family: 'Share Tech Mono', monospace; font-size: 10px; padding: 4px 6px; width: 100%; margin-top: 3px;
   }
-  .mode-select:focus { outline: none; border-color: var(--orange); }
+  .model-input { font-size: 9px; }
+  .mode-select:focus, .model-input:focus { outline: none; border-color: var(--orange); }
+  .model-section { margin-top: 8px; border-top: 1px solid #1a1a1a; padding-top: 8px; }
+  .model-section .label { margin-bottom: 4px; }
+  .node-label { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+  .node-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .node-dot.m { background: #ff6666; }
+  .node-dot.b { background: #6699ff; }
+  .node-dot.c { background: #66ff99; }
 
   /* RIGHT PANEL — RESULT */
   .result-panel {
@@ -70,7 +80,7 @@
   }
   .result-panel .jp-title { float: right; font-family: sans-serif; font-size: 14px; }
 
-  /* Verdict — the big visual answer */
+  /* Verdict */
   .verdict-box {
     padding: 16px 12px; text-align: center; border-bottom: 1px solid #111;
   }
@@ -82,12 +92,20 @@
   .verdict-text.reject { color: var(--red); }
   .verdict-text.deadlock { color: var(--orange); animation: lamp-blink 1.5s infinite; }
   .verdict-text.pending { color: var(--orange-dim); }
+  .verdict-text.synthesizing { color: var(--synth-purple); animation: lamp-blink 1.2s infinite; }
   .verdict-sub { font-size: 10px; color: var(--orange-dim); }
+
+  /* Cost bar */
+  .cost-bar {
+    display: flex; justify-content: space-between; padding: 4px 12px;
+    font-size: 9px; color: var(--orange-dim); border-bottom: 1px solid #0a0a0a;
+  }
+  .cost-bar .cost-val { color: var(--green); font-family: 'Orbitron', sans-serif; }
 
   /* Node vote lamps */
   .vote-nodes { border-bottom: 1px solid #111; }
   .vote-row {
-    display: flex; align-items: center; padding: 8px 12px; gap: 8px;
+    display: flex; align-items: center; padding: 6px 12px; gap: 8px;
     border-bottom: 1px solid #0a0a0a;
   }
   .vote-lamp {
@@ -102,6 +120,9 @@
   .vote-lamp.reject { background: var(--red); box-shadow: 0 0 8px var(--red); }
   .vote-lamp.abstain { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
   .vote-lamp.error { background: #444; color: #888; }
+  .vote-lamp.retryable { background: var(--red); box-shadow: 0 0 8px var(--red); animation: retry-pulse 1.5s infinite; }
+  @keyframes retry-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .vote-lamp.synth { background: var(--synth-purple); box-shadow: 0 0 8px var(--synth-purple); }
   @keyframes lamp-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
 
   .vote-node-info { flex: 1; }
@@ -111,7 +132,9 @@
   .vote-node-name.melchior { color: #ff6666; }
   .vote-node-name.balthasar { color: #6699ff; }
   .vote-node-name.casper { color: #66ff99; }
+  .vote-node-name.judge { color: #ffaa00; }
   .vote-node-model { font-size: 8px; color: #555; }
+  .vote-node-cost { font-size: 8px; color: var(--green); }
   .vote-node-status { font-size: 9px; color: var(--orange-dim); text-align: right; min-width: 60px; }
 
   /* Ruling summary */
@@ -125,6 +148,7 @@
   }
   .ruling-area .rl-text { word-break: break-word; }
   .ruling-area .rl-minority { color: var(--red); opacity: 0.8; word-break: break-word; }
+  .ruling-area .rl-synth { color: var(--synth-purple); font-size: 9px; }
   .ruling-empty {
     flex: 1; display: flex; align-items: center; justify-content: center;
     color: var(--orange-dim); font-size: 10px; letter-spacing: 2px;
@@ -135,11 +159,13 @@
   .hex-connections { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
   .hex-connections line { stroke: var(--orange); stroke-width: 3; opacity: 0.6; }
   .hex-connections line.active { opacity: 1; filter: drop-shadow(0 0 4px var(--orange)); animation: line-pulse 1.5s infinite; }
+  .hex-connections line.synth { stroke: var(--synth-purple); opacity: 1; filter: drop-shadow(0 0 6px var(--synth-purple)); }
   @keyframes line-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
   .magi-center {
     position: absolute; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 28px;
     color: var(--orange); letter-spacing: 6px; text-shadow: 0 0 20px var(--orange-glow); z-index: 10;
   }
+  .magi-center.synth { color: var(--synth-purple); text-shadow: 0 0 20px rgba(187,102,255,0.4); }
   .hex-node { position: absolute; width: 260px; height: 260px; cursor: pointer; }
   .hex-shape {
     width: 100%; height: 100%;
@@ -153,6 +179,7 @@
   .hex-shape.done { background: var(--cyan-active); }
   .hex-shape.error { background: #d88888; }
   .hex-shape.critiquing { background: #88c8d8; animation: hex-think 2s infinite; }
+  .hex-shape.synthesizing { background: #c8a0e8; animation: hex-think 1.5s infinite; }
   @keyframes hex-think { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(0.7); } }
   .hex-node-name {
     font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 18px;
@@ -171,6 +198,10 @@
     font-family: 'Share Tech Mono', monospace; font-size: 8px;
     color: var(--dark-blue-text); opacity: 0.5; margin-top: 4px;
   }
+  .hex-cost {
+    font-family: 'Share Tech Mono', monospace; font-size: 8px;
+    color: #1a5a2a; margin-top: 2px;
+  }
   .hex-node.top  { top: 5%; left: 50%; transform: translateX(-50%); }
   .hex-node.left { bottom: 8%; left: 12%; }
   .hex-node.right { bottom: 8%; right: 12%; }
@@ -182,11 +213,12 @@
     border-top: 2px solid var(--orange); z-index: 100;
     overflow: hidden; transition: max-height 0.4s ease-out; font-size: 11px; line-height: 1.6;
   }
-  .node-detail.visible { max-height: 45%; overflow-y: auto; }
+  .node-detail.visible { max-height: 100%; overflow-y: auto; }
   .node-detail .detail-inner { padding: 12px 16px; }
   .node-detail .detail-header {
     display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 8px; position: sticky; top: 0; background: rgba(5,5,10,0.97); padding-bottom: 4px;
+    margin-bottom: 8px; position: sticky; top: 0; background: rgba(5,5,10,0.98); padding-bottom: 4px;
+    z-index: 30; border-bottom: 1px solid #222;
   }
   .detail-tabs { display: flex; gap: 2px; }
   .detail-tab {
@@ -225,16 +257,39 @@
     padding: 0 24px; cursor: pointer; transition: all 0.2s;
   }
   .btn-execute:hover { background: var(--orange); color: black; }
-  .btn-execute:disabled { opacity: 0.3; cursor: not-allowed; }
-  .btn-execute.running { border-color: var(--red); color: var(--red); animation: btn-pulse 1s infinite; }
+  .btn-execute.running { border-color: var(--red); color: var(--red); cursor: pointer; animation: btn-pulse 1s infinite; }
+  .btn-execute.running:hover { background: var(--red); color: black; }
   @keyframes btn-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
   @media (max-width: 1200px) {
-    .sys-panel { width: 160px; }
+    .sys-panel { width: 180px; }
     .result-panel { width: 260px; }
     .hex-node { width: 200px; height: 200px; }
     .hex-node-name { font-size: 14px; }
   }
+
+  /* RESULT TAB — round navigation */
+  .detail-tab.result.active { background: var(--synth-purple); color: black; border-color: var(--synth-purple); }
+  .round-nav { display: flex; gap: 4px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+  .round-block {
+    width: 16px; height: 16px; border: 1px solid #555; cursor: pointer;
+    transition: all 0.2s; font-size: 7px; text-align: center; line-height: 16px; flex-shrink: 0;
+  }
+  .round-block:hover { border-color: var(--orange); }
+  .round-block.active { border-color: var(--orange); background: var(--orange-dim); }
+  .round-block.final-approve { border-color: #00dd66; background: #00dd66; }
+  .round-block.final-reject { border-color: #ff2222; background: #ff2222; }
+  .round-block.final-deadlock { border-color: #ff8800; background: #ff8800; }
+  .round-block.final-synth { border-color: var(--synth-purple); background: var(--synth-purple); }
+  .round-content-node { margin-bottom: 10px; }
+  .round-content-node .rcn-label {
+    font-size: 8px; letter-spacing: 2px; margin-bottom: 3px; font-family: 'Orbitron', sans-serif;
+  }
+  .rcn-label.melchior { color: #ff6666; }
+  .rcn-label.balthasar { color: #6699ff; }
+  .rcn-label.casper { color: #66ff99; }
+  .round-agreement { font-size: 9px; color: var(--orange-dim); margin-top: 8px; padding-top: 6px; border-top: 1px solid #1a1a1a; }
+  .result-final-label { font-size: 8px; letter-spacing: 2px; color: var(--synth-purple); margin-bottom: 4px; }
 </style>
 </head>
 <body>
@@ -267,7 +322,12 @@
       <div class="label">LATENCY</div>
       <div class="value" style="font-size:12px" id="latValue">---</div>
     </div>
-    <div style="margin-top:auto">
+    <div class="code-block">
+      <div class="label">TOTAL COST</div>
+      <div class="value" style="font-size:12px;color:var(--green)" id="costValue">$0.000</div>
+    </div>
+
+    <div style="margin-top:6px">
       <div class="label">MODE</div>
       <select class="mode-select" id="modeSelect">
         <option value="adaptive">ADAPTIVE</option>
@@ -275,14 +335,34 @@
         <option value="critique">CRITIQUE</option>
         <option value="escalate">ESCALATE</option>
       </select>
-      <div class="label" style="margin-top:8px">PRESET</div>
+      <div class="label" style="margin-top:6px">PRESET</div>
       <select class="mode-select" id="presetSelect">
         <option value="eva">EVA</option>
         <option value="code-review">CODE REVIEW</option>
         <option value="research">RESEARCH</option>
         <option value="strategy">STRATEGY</option>
         <option value="writing">WRITING</option>
+        <option value="ice-debug">ICE DEBUG</option>
+        <option value="architecture">ARCHITECTURE</option>
       </select>
+    </div>
+
+    <!-- Model Config -->
+    <div class="model-section">
+      <div class="label">MODEL CONFIGURATION</div>
+      <div class="node-label"><span class="node-dot m"></span><span style="font-size:9px">MELCHIOR</span></div>
+      <select class="model-input" id="modelInputM"><option value="">default</option></select>
+      <div class="node-label"><span class="node-dot b"></span><span style="font-size:9px">BALTHASAR</span></div>
+      <select class="model-input" id="modelInputB"><option value="">default</option></select>
+      <div class="node-label"><span class="node-dot c"></span><span style="font-size:9px">CASPER</span></div>
+      <select class="model-input" id="modelInputC"><option value="">default</option></select>
+    </div>
+
+    <!-- Judge Config -->
+    <div class="model-section">
+      <div class="label">JUDGE MODEL</div>
+      <div class="node-label"><span class="node-dot" style="background:#ffaa00"></span><span style="font-size:9px">JUDGE</span></div>
+      <select class="model-input" id="judgeModelSelect"><option value="">default</option></select>
     </div>
   </div>
 
@@ -297,6 +377,7 @@
         <div class="hex-node-number">1</div>
         <div class="hex-status-badge" id="badgeMelchior">IDLE</div>
         <div class="hex-model-name" id="modelMelchior">-</div>
+        <div class="hex-cost" id="costMelchior"></div>
       </div>
     </div>
     <div class="hex-node left" id="hexBalthasar" onclick="showDetail('balthasar')">
@@ -305,6 +386,7 @@
         <div class="hex-node-number">2</div>
         <div class="hex-status-badge" id="badgeBalthasar">IDLE</div>
         <div class="hex-model-name" id="modelBalthasar">-</div>
+        <div class="hex-cost" id="costBalthasar"></div>
       </div>
     </div>
     <div class="hex-node right" id="hexCasper" onclick="showDetail('casper')">
@@ -313,6 +395,7 @@
         <div class="hex-node-number">3</div>
         <div class="hex-status-badge" id="badgeCasper">IDLE</div>
         <div class="hex-model-name" id="modelCasper">-</div>
+        <div class="hex-cost" id="costCasper"></div>
       </div>
     </div>
 
@@ -323,6 +406,7 @@
             <div class="detail-tab melchior" onclick="switchTab('melchior')">MELCHIOR</div>
             <div class="detail-tab balthasar" onclick="switchTab('balthasar')">BALTHASAR</div>
             <div class="detail-tab casper" onclick="switchTab('casper')">CASPER</div>
+            <div class="detail-tab result" onclick="switchTab('result')" style="display:none" id="tabResult">RESULT</div>
           </div>
           <span class="detail-close" onclick="hideDetail()">CLOSE</span>
         </div>
@@ -337,19 +421,23 @@
       RESULT <span class="jp-title">決議結果</span>
     </div>
 
-    <!-- Verdict: the one thing users need to see -->
     <div class="verdict-box">
       <div class="verdict-text pending" id="verdictText">AWAITING</div>
       <div class="verdict-sub" id="verdictSub">Submit a query to begin</div>
     </div>
 
-    <!-- Node voting status -->
+    <div class="cost-bar">
+      <span>COST</span>
+      <span class="cost-val" id="totalCostDisplay">$0.000000</span>
+    </div>
+
     <div class="vote-nodes">
       <div class="vote-row">
         <div class="vote-lamp idle" id="lampMelchior"></div>
         <div class="vote-node-info">
           <div class="vote-node-name melchior">MELCHIOR</div>
           <div class="vote-node-model" id="rvModelMelchior">-</div>
+          <div class="vote-node-cost" id="rvCostMelchior"></div>
         </div>
         <div class="vote-node-status" id="vstatMelchior">IDLE</div>
       </div>
@@ -358,6 +446,7 @@
         <div class="vote-node-info">
           <div class="vote-node-name balthasar">BALTHASAR</div>
           <div class="vote-node-model" id="rvModelBalthasar">-</div>
+          <div class="vote-node-cost" id="rvCostBalthasar"></div>
         </div>
         <div class="vote-node-status" id="vstatBalthasar">IDLE</div>
       </div>
@@ -366,12 +455,20 @@
         <div class="vote-node-info">
           <div class="vote-node-name casper">CASPER</div>
           <div class="vote-node-model" id="rvModelCasper">-</div>
+          <div class="vote-node-cost" id="rvCostCasper"></div>
         </div>
         <div class="vote-node-status" id="vstatCasper">IDLE</div>
       </div>
+      <div class="vote-row" style="border-top:1px solid var(--orange-dim)">
+        <div class="vote-lamp idle" id="lampJudge"></div>
+        <div class="vote-node-info">
+          <div class="vote-node-name" style="color:#ffaa00">JUDGE</div>
+          <div class="vote-node-model" id="rvModelJudge">-</div>
+        </div>
+        <div class="vote-node-status" id="vstatJudge">IDLE</div>
+      </div>
     </div>
 
-    <!-- Ruling content -->
     <div class="ruling-area" id="rulingArea">
       <div class="ruling-empty">AWAITING QUERY</div>
     </div>
@@ -387,8 +484,14 @@
 <script>
 const WS_URL = `ws://${location.host}/ws/ask`;
 let nodeAnswers = {};
+let nodeCosts = {};
 let currentRound = 0;
 let activeTab = 'melchior';
+let totalCost = 0;
+let _sourceMode = 'api';
+let roundData = [];       // [{round: 0, answers: {melchior: '...', ...}, agreement: null}, ...]
+let finalRuling = null;   // {ruling, protocol, confidence, votes, failed_nodes}
+let activeRoundBlock = null;  // index into roundData[] or 'final'
 
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
@@ -402,9 +505,9 @@ function drawConnections() {
   }
   const m = center('hexMelchior'), b = center('hexBalthasar'), c = center('hexCasper');
   svg.innerHTML = `
-    <line x1="${m.x}" y1="${m.y}" x2="${b.x}" y2="${b.y}"/>
-    <line x1="${m.x}" y1="${m.y}" x2="${c.x}" y2="${c.y}"/>
-    <line x1="${b.x}" y1="${b.y}" x2="${c.x}" y2="${c.y}"/>`;
+    <line id="lineMB" x1="${m.x}" y1="${m.y}" x2="${b.x}" y2="${b.y}"/>
+    <line id="lineMC" x1="${m.x}" y1="${m.y}" x2="${c.x}" y2="${c.y}"/>
+    <line id="lineBC" x1="${b.x}" y1="${b.y}" x2="${c.x}" y2="${c.y}"/>`;
   const mc = document.getElementById('magiCenter');
   mc.style.left = (m.x+b.x+c.x)/3 + 'px';
   mc.style.top = (m.y+b.y+c.y)/3 + 'px';
@@ -424,7 +527,17 @@ function setLamp(node, state) {
 }
 
 function setLinesActive(active) {
-  document.querySelectorAll('.hex-connections line').forEach(l => l.classList.toggle('active', active));
+  document.querySelectorAll('.hex-connections line').forEach(l => {
+    l.classList.remove('active', 'synth');
+    if (active) l.classList.add('active');
+  });
+}
+
+function setLinesSynth() {
+  document.querySelectorAll('.hex-connections line').forEach(l => {
+    l.classList.remove('active');
+    l.classList.add('synth');
+  });
 }
 
 function setVerdict(type, text, sub) {
@@ -432,6 +545,19 @@ function setVerdict(type, text, sub) {
   el.className = `verdict-text ${type}`;
   el.textContent = text;
   document.getElementById('verdictSub').textContent = sub || '';
+}
+
+function updateCost(amount) {
+  totalCost += amount;
+  document.getElementById('costValue').textContent = '$' + totalCost.toFixed(6);
+  document.getElementById('totalCostDisplay').textContent = '$' + totalCost.toFixed(6);
+}
+
+function setNodeCost(node, cost) {
+  nodeCosts[node] = (nodeCosts[node] || 0) + cost;
+  const display = '$' + nodeCosts[node].toFixed(6);
+  document.getElementById(`cost${cap(node)}`).textContent = display;
+  document.getElementById(`rvCost${cap(node)}`).textContent = display;
 }
 
 function showDetail(node) {
@@ -448,49 +574,202 @@ function switchTab(node) {
   document.querySelector(`.detail-tab.${node}`).classList.add('active');
 }
 function updateDetailContent() {
+  if (activeTab === 'result') {
+    renderResultTab();
+    return;
+  }
   document.getElementById('detailBody').innerHTML = renderMd(nodeAnswers[activeTab] || 'Waiting for response...');
+}
+
+function renderResultTab() {
+  if (roundData.length === 0 && !finalRuling) {
+    document.getElementById('detailBody').innerHTML = '<div style="color:var(--orange-dim);font-size:10px;letter-spacing:2px">NO RESULT DATA YET</div>';
+    return;
+  }
+
+  // Determine final block CSS class
+  let finalClass = 'final-deadlock';
+  if (finalRuling) {
+    const r = finalRuling.ruling || '';
+    const isSynth = (finalRuling.protocol || '').includes('synth');
+    if (isSynth) {
+      finalClass = 'final-synth';
+    } else {
+      const votes = finalRuling.votes || {};
+      const approveCount = Object.values(votes).filter(v => v === 'approve').length;
+      const rejectCount = Object.values(votes).filter(v => v === 'reject').length;
+      if (approveCount >= 2) finalClass = 'final-approve';
+      else if (rejectCount >= 2) finalClass = 'final-reject';
+      else finalClass = 'final-deadlock';
+    }
+  }
+
+  // Build round nav
+  let nav = '<div class="round-nav">';
+  roundData.forEach((rd, i) => {
+    const label = rd.round === 0 ? '0' : String(rd.round);
+    const isActive = (activeRoundBlock === i) ? ' active' : '';
+    nav += `<div class="round-block${isActive}" title="Round ${label}" onclick="selectRoundBlock(${i})">${label}</div>`;
+  });
+  if (finalRuling) {
+    const isActiveFinal = (activeRoundBlock === 'final') ? ` active` : '';
+    nav += `<div class="round-block ${finalClass}${isActiveFinal}" title="Final Ruling" onclick="selectRoundBlock('final')">F</div>`;
+  }
+  nav += '</div>';
+
+  // Build content for selected block
+  let content = '';
+  if (activeRoundBlock === 'final' && finalRuling) {
+    content += '<div class="result-final-label">FINAL RULING</div>';
+    content += `<div style="color:var(--orange);font-size:11px;line-height:1.6">${renderMd(finalRuling.ruling || '')}</div>`;
+    if (finalRuling.protocol) {
+      content += `<div class="round-agreement">PROTOCOL: ${finalRuling.protocol.toUpperCase()}</div>`;
+    }
+    if (finalRuling.confidence != null) {
+      content += `<div class="round-agreement">CONFIDENCE: ${(finalRuling.confidence * 100).toFixed(0)}%</div>`;
+    }
+  } else if (typeof activeRoundBlock === 'number' && roundData[activeRoundBlock]) {
+    const rd = roundData[activeRoundBlock];
+    const nodeColors = { melchior: 'melchior', balthasar: 'balthasar', casper: 'casper' };
+    for (const [nodeName, colorClass] of Object.entries(nodeColors)) {
+      if (rd.answers && rd.answers[nodeName]) {
+        content += `<div class="round-content-node">`;
+        content += `<div class="rcn-label ${colorClass}">${nodeName.toUpperCase()}</div>`;
+        content += `<div style="color:var(--orange);opacity:0.9;font-size:11px;line-height:1.5">${renderMd(rd.answers[nodeName])}</div>`;
+        content += `</div>`;
+      }
+    }
+    if (rd.agreement != null) {
+      content += `<div class="round-agreement">ROUND ${rd.round} AGREEMENT: ${(rd.agreement * 100).toFixed(0)}%</div>`;
+    }
+  } else {
+    content = '<div style="color:var(--orange-dim);font-size:10px;letter-spacing:2px">SELECT A ROUND BLOCK ABOVE</div>';
+  }
+
+  document.getElementById('detailBody').innerHTML = nav + content;
+}
+
+function selectRoundBlock(idx) {
+  activeRoundBlock = idx;
+  renderResultTab();
 }
 function hideDetail() { document.getElementById('nodeDetail').classList.remove('visible'); }
 function autoShowNode(node) { showDetail(node); }
 
 function resetUI() {
-  ['melchior','balthasar','casper'].forEach(n => { setHexStatus(n, 'idle', 'IDLE'); setLamp(n, 'idle'); });
+  ['melchior','balthasar','casper'].forEach(n => {
+    setHexStatus(n, 'idle', 'IDLE');
+    setLamp(n, 'idle');
+    document.getElementById(`cost${cap(n)}`).textContent = '';
+    document.getElementById(`rvCost${cap(n)}`).textContent = '';
+  });
+  // Reset judge lamp
+  const jl = document.getElementById('lampJudge');
+  jl.className = 'vote-lamp idle'; jl.style.cursor = ''; jl.onclick = null;
+  document.getElementById('vstatJudge').textContent = 'IDLE';
+  document.getElementById('rvModelJudge').textContent = '-';
   setLinesActive(false);
   nodeAnswers = {};
+  nodeCosts = {};
   currentRound = 0;
+  totalCost = 0;
+  roundData = [];
+  finalRuling = null;
+  activeRoundBlock = null;
+  document.getElementById('tabResult').style.display = 'none';
   document.getElementById('protoValue').textContent = 'STANDBY';
   document.getElementById('roundValue').textContent = '0';
   document.getElementById('latValue').textContent = '---';
+  document.getElementById('costValue').textContent = '$0.000';
+  document.getElementById('totalCostDisplay').textContent = '$0.000000';
+  document.getElementById('magiCenter').className = 'magi-center';
   setVerdict('pending', 'PROCESSING', 'Querying MAGI nodes...');
   document.getElementById('rulingArea').innerHTML = '<div class="ruling-empty">PROCESSING...</div>';
   hideDetail();
 }
 
+let _activeWs = null;  // global ref for retry
+
+function makeRetryable(nodeName) {
+  const lamp = document.getElementById(`lamp${cap(nodeName)}`);
+  lamp.style.cursor = 'pointer';
+  lamp.title = 'Click to retry (change model in left panel first if needed)';
+  lamp.classList.add('retryable');
+  lamp.onclick = () => retryNode(nodeName);
+}
+
+function retryNode(nodeName) {
+  if (!_activeWs || _activeWs.readyState !== WebSocket.OPEN) return;
+  const payload = { action: 'retry', node: nodeName };
+  // Include current model selection so server can recreate node if changed
+  const selId = {melchior:'modelInputM', balthasar:'modelInputB', casper:'modelInputC'}[nodeName];
+  if (selId) {
+    const val = document.getElementById(selId).value.trim();
+    if (val) {
+      if (_sourceMode === 'api') payload.model = val;
+      else payload.model_tier = val;
+    }
+  }
+  _activeWs.send(JSON.stringify(payload));
+}
+
+function retryJudge() {
+  if (!_activeWs || _activeWs.readyState !== WebSocket.OPEN) return;
+  const jm = document.getElementById('judgeModelSelect').value || '';
+  _activeWs.send(JSON.stringify({ action: 'retry', node: 'judge', judge_model: jm }));
+}
+
 function execute() {
+  const btn = document.getElementById('executeBtn');
+  // If running, abort
+  if (_activeWs && _activeWs.readyState === WebSocket.OPEN) {
+    _activeWs.close();
+    _activeWs = null;
+    btn.classList.remove('running'); btn.textContent = 'EXECUTE';
+    document.getElementById('statusText').textContent = 'ABORTED';
+    setVerdict('deadlock', 'ABORTED', 'Execution cancelled by user');
+    setLinesActive(false);
+    return;
+  }
   const query = document.getElementById('queryInput').value.trim();
   if (!query) return;
-  const btn = document.getElementById('executeBtn');
-  btn.disabled = true; btn.classList.add('running'); btn.textContent = 'ACTIVE';
+  btn.classList.add('running'); btn.textContent = 'ABORT';
   resetUI();
   document.getElementById('statusText').textContent = 'CONNECTING';
   document.getElementById('codeValue').textContent = String(Math.floor(Math.random()*999)).padStart(3,'0');
 
   const ws = new WebSocket(WS_URL);
+  _activeWs = ws;
   ws.onopen = () => {
     document.getElementById('statusText').textContent = 'TRANSMITTING';
     setLinesActive(true);
-    ws.send(JSON.stringify({
+    const payload = {
       query,
       mode: document.getElementById('modeSelect').value,
       preset: document.getElementById('presetSelect').value,
-    }));
+      judge_model: document.getElementById('judgeModelSelect').value || '',
+    };
+    // Include model tier selections (CLI modes) or custom model IDs (API mode)
+    const mM = document.getElementById('modelInputM').value.trim();
+    const mB = document.getElementById('modelInputB').value.trim();
+    const mC = document.getElementById('modelInputC').value.trim();
+    if (_sourceMode === 'api') {
+      if (mM) payload.melchior = mM;
+      if (mB) payload.balthasar = mB;
+      if (mC) payload.casper = mC;
+    } else {
+      if (mM) payload.melchior_tier = mM;
+      if (mB) payload.balthasar_tier = mB;
+      if (mC) payload.casper_tier = mC;
+    }
+    ws.send(JSON.stringify(payload));
   };
   ws.onmessage = (e) => handleEvent(JSON.parse(e.data));
-  ws.onclose = () => { btn.disabled = false; btn.classList.remove('running'); btn.textContent = 'EXECUTE'; };
+  ws.onclose = () => { _activeWs = null; btn.disabled = false; btn.classList.remove('running'); btn.textContent = 'EXECUTE'; };
   ws.onerror = () => {
     document.getElementById('statusText').textContent = 'CONNECTION FAILED';
-    setVerdict('divided', 'ERROR', 'Connection failed');
-    btn.disabled = false; btn.classList.remove('running'); btn.textContent = 'EXECUTE';
+    setVerdict('deadlock', 'ERROR', 'Connection failed');
+    _activeWs = null; btn.disabled = false; btn.classList.remove('running'); btn.textContent = 'EXECUTE';
   };
 }
 
@@ -514,8 +793,15 @@ function handleEvent(data) {
 
     case 'node_done':
       setHexStatus(data.node, 'done', 'COMPLETE');
-      setLamp(data.node, 'approve'); // temporary, final vote set on decision
+      setLamp(data.node, 'approve');
       nodeAnswers[data.node] = data.answer;
+      if (data.cost_usd) {
+        updateCost(data.cost_usd);
+        setNodeCost(data.node, data.cost_usd);
+      }
+      // Store into round 0
+      if (!roundData[0]) roundData[0] = { round: 0, answers: {}, agreement: null };
+      roundData[0].answers[data.node] = data.answer;
       autoShowNode(data.node);
       break;
 
@@ -523,28 +809,59 @@ function handleEvent(data) {
       setHexStatus(data.node, 'error', 'FAILED');
       setLamp(data.node, 'error');
       nodeAnswers[data.node] = 'ERROR: ' + data.error;
+      makeRetryable(data.node);
       break;
+
+    case 'judge_start': {
+      const jLamp = document.getElementById('lampJudge');
+      jLamp.className = 'vote-lamp thinking'; jLamp.style.cursor = ''; jLamp.onclick = null;
+      document.getElementById('vstatJudge').textContent = 'JUDGING';
+      document.getElementById('rvModelJudge').textContent = data.model || '-';
+      break;
+    }
+
+    case 'judge_done': {
+      const jLamp2 = document.getElementById('lampJudge');
+      jLamp2.className = 'vote-lamp approve';
+      document.getElementById('vstatJudge').textContent = `${(data.score*100).toFixed(0)}%`;
+      document.getElementById('rvModelJudge').textContent = data.model || '-';
+      break;
+    }
+
+    case 'judge_error': {
+      const jLamp3 = document.getElementById('lampJudge');
+      jLamp3.className = 'vote-lamp retryable';
+      jLamp3.style.cursor = 'pointer';
+      jLamp3.title = 'Click to retry judge (change model in left panel first if needed)';
+      jLamp3.onclick = () => retryJudge();
+      document.getElementById('vstatJudge').textContent = 'FAILED';
+      document.getElementById('rvModelJudge').textContent = data.model || '-';
+      break;
+    }
 
     case 'agreement':
       document.getElementById('protoValue').textContent = data.route.toUpperCase();
       if (data.route === 'vote') {
-        setVerdict('pending', 'VOTING', 'High agreement, voting...');
+        setVerdict('pending', 'VOTING', `Agreement: ${(data.score*100).toFixed(0)}% — fast path`);
       } else if (data.route === 'critique') {
-        setVerdict('pending', 'DEBATING', 'Disagreement detected, models debating...');
+        setVerdict('pending', 'ICE DEBATE', `Agreement: ${(data.score*100).toFixed(0)}% — error-detection mode`);
       } else {
-        setVerdict('pending', 'ESCALATING', 'Major disagreement, forced resolution...');
+        setVerdict('pending', 'ESCALATING', `Agreement: ${(data.score*100).toFixed(0)}% — forced resolution`);
       }
       document.getElementById('statusText').textContent = `ROUTE: ${data.route.toUpperCase()}`;
+      // Store initial agreement score on round 0
+      if (!roundData[0]) roundData[0] = { round: 0, answers: {}, agreement: null };
+      roundData[0].agreement = data.score;
       break;
 
     case 'critique_start':
       currentRound = data.round;
       document.getElementById('roundValue').textContent = data.round;
-      document.getElementById('statusText').textContent = `CRITIQUE R${data.round}`;
-      setVerdict('pending', `DEBATE R${data.round}`, 'Models critiquing each other...');
+      document.getElementById('statusText').textContent = `ICE R${data.round}`;
+      setVerdict('pending', `ICE R${data.round}`, 'Error-detection critique in progress...');
       ['melchior','balthasar','casper'].forEach(n => {
         if (document.getElementById(`badge${cap(n)}`).textContent !== 'FAILED') {
-          setHexStatus(n, 'critiquing', `CRITIQUE R${data.round}`);
+          setHexStatus(n, 'critiquing', `ICE R${data.round}`);
           setLamp(n, 'thinking');
         }
       });
@@ -554,6 +871,13 @@ function handleEvent(data) {
       setHexStatus(data.node, 'done', `R${data.round} DONE`);
       setLamp(data.node, 'approve');
       nodeAnswers[data.node] = data.answer;
+      if (data.cost_usd) {
+        updateCost(data.cost_usd);
+        setNodeCost(data.node, data.cost_usd);
+      }
+      // Store into critique round
+      if (!roundData[data.round]) roundData[data.round] = { round: data.round, answers: {}, agreement: null };
+      roundData[data.round].answers[data.node] = data.answer;
       autoShowNode(data.node);
       break;
 
@@ -563,6 +887,22 @@ function handleEvent(data) {
       break;
 
     case 'critique_agreement':
+      document.getElementById('verdictSub').textContent =
+        `R${data.round} agreement: ${(data.score*100).toFixed(0)}%`;
+      if (roundData[data.round]) roundData[data.round].agreement = data.score;
+      break;
+
+    case 'synthesis_start':
+      document.getElementById('statusText').textContent = 'SYNTHESIZING';
+      setVerdict('synthesizing', 'SYNTHESIS', 'Combining perspectives...');
+      setLinesSynth();
+      document.getElementById('magiCenter').classList.add('synth');
+      ['melchior','balthasar','casper'].forEach(n => {
+        if (document.getElementById(`badge${cap(n)}`).textContent !== 'FAILED') {
+          setHexStatus(n, 'synthesizing', 'SYNTH');
+          setLamp(n, 'synth');
+        }
+      });
       break;
 
     case 'decision': {
@@ -570,14 +910,22 @@ function handleEvent(data) {
       document.getElementById('statusText').textContent = 'DECISION RENDERED';
       document.getElementById('latValue').textContent = (data.latency_ms/1000).toFixed(1) + 's';
       document.getElementById('protoValue').textContent = data.protocol_used.toUpperCase();
+      document.getElementById('magiCenter').className = 'magi-center';
 
-      // EVA-style verdict: 承認 / 否決 / 膠着
+      if (data.cost_mode === 'unavailable') {
+        document.getElementById('costValue').textContent = 'N/A';
+        document.getElementById('totalCostDisplay').textContent = 'N/A';
+      } else if (data.cost_usd) {
+        totalCost = data.cost_usd;
+        const prefix = data.cost_mode === 'estimated' ? '~$' : '$';
+        document.getElementById('costValue').textContent = prefix + totalCost.toFixed(6);
+        document.getElementById('totalCostDisplay').textContent = prefix + totalCost.toFixed(6);
+      }
+
       const conf = data.confidence;
-      const hasMinority = data.minority_report && data.minority_report.length > 0;
       const failedCount = (data.failed_nodes || []).length;
       const voteCount = Object.keys(data.votes || {}).length;
 
-      // Determine each node's vote: approve (agrees with ruling) or reject (disagrees)
       const ruling = data.ruling || '';
       const nodeVotes = {};
       for (const [name, answer] of Object.entries(data.votes || {})) {
@@ -587,17 +935,21 @@ function handleEvent(data) {
 
       const approveCount = Object.values(nodeVotes).filter(v => v === 'approve').length;
       const rejectCount = Object.values(nodeVotes).filter(v => v === 'reject').length;
-      const abstainCount = Object.values(nodeVotes).filter(v => v === 'abstain').length;
 
-      // Set per-node lamp + status text
       for (const [name, vote] of Object.entries(nodeVotes)) {
         setLamp(name, vote);
         const labels = { approve: '承認', reject: '否決', abstain: '棄権' };
         document.getElementById(`vstat${cap(name)}`).textContent = labels[vote] || vote;
       }
 
-      // Overall verdict
-      if (approveCount >= 2 && rejectCount === 0) {
+      // Synthesized results always show as approved (ICE consensus)
+      const isSynth = data.protocol_used.includes('synth');
+      if (isSynth) {
+        setVerdict('approve', '統合', 'SYNTHESIZED — ICE consensus reached');
+        ['melchior','balthasar','casper'].forEach(n => {
+          if (!data.failed_nodes?.includes(n)) { setLamp(n, 'approve'); }
+        });
+      } else if (approveCount >= 2 && rejectCount === 0) {
         setVerdict('approve', '承認', 'APPROVED — consensus reached');
       } else if (approveCount >= 2) {
         setVerdict('approve', '承認', `APPROVED — ${approveCount} of ${voteCount + failedCount} agree`);
@@ -607,8 +959,12 @@ function handleEvent(data) {
         setVerdict('deadlock', '膠着', 'DEADLOCK — no consensus');
       }
 
-      // Build ruling area
-      let html = '<div class="rl-label">決議內容 RULING</div>';
+      let html = '';
+      if (isSynth) {
+        html += '<div class="rl-label" style="color:var(--synth-purple)">統合結果 SYNTHESIS</div>';
+      } else {
+        html += '<div class="rl-label">決議內容 RULING</div>';
+      }
       html += `<div class="rl-text">${renderMd(data.ruling.substring(0, 3000))}</div>`;
       if (data.minority_report) {
         html += '<div class="rl-label" style="color:var(--red)">反對意見 DISSENT</div>';
@@ -618,12 +974,35 @@ function handleEvent(data) {
         html += `<div class="rl-label" style="color:var(--red)">NODE FAILURE: ${data.failed_nodes.join(', ')}</div>`;
       }
       document.getElementById('rulingArea').innerHTML = html;
+
+      // Store final ruling and show RESULT tab
+      const nodeVotesSummary = {};
+      for (const [name, answer] of Object.entries(data.votes || {})) {
+        nodeVotesSummary[name] = (answer === data.ruling) ? 'approve' : 'reject';
+      }
+      (data.failed_nodes || []).forEach(n => { nodeVotesSummary[n] = 'abstain'; });
+      finalRuling = {
+        ruling: data.ruling,
+        protocol: data.protocol_used,
+        confidence: data.confidence,
+        votes: nodeVotesSummary,
+        failed_nodes: data.failed_nodes || []
+      };
+      const tabResult = document.getElementById('tabResult');
+      tabResult.style.display = '';
+      // Auto-select final block and switch to result tab
+      activeRoundBlock = 'final';
+      switchTab('result');
       break;
     }
 
+    case 'retry_agreement':
+      setVerdict('pending', 'UPDATED', `Agreement: ${(data.score*100).toFixed(0)}% — after retry`);
+      break;
+
     case 'error':
       document.getElementById('statusText').textContent = 'ERROR';
-      setVerdict('divided', 'ERROR', data.message);
+      setVerdict('deadlock', 'ERROR', data.message);
       break;
   }
 }
@@ -643,6 +1022,9 @@ function renderMd(s) {
   h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
   h = h.replace(/^[-*]\s+(.+)/gm, '<div style="padding-left:12px">- $1</div>');
   h = h.replace(/^(\d+)\.\s+(.+)/gm, '<div style="padding-left:12px">$1. $2</div>');
+  // Highlight ERRORS FOUND section in critique responses
+  h = h.replace(/ERRORS FOUND:/g, '<strong style="color:var(--red)">ERRORS FOUND:</strong>');
+  h = h.replace(/REVISED ANSWER:/g, '<strong style="color:var(--green)">REVISED ANSWER:</strong>');
   return h;
 }
 
@@ -650,12 +1032,62 @@ document.getElementById('queryInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); execute(); }
 });
 
+// Load defaults and populate model inputs
 fetch('/api/defaults').then(r => r.json()).then(data => {
   ['melchior','balthasar','casper'].forEach(n => {
-    const short = (data[n] || '-').split('/').pop().replace(':free','');
+    const model = data[n] || '-';
+    const short = model.split('/').pop().replace(':free','');
     document.getElementById(`model${cap(n)}`).textContent = short;
     document.getElementById(`rvModel${cap(n)}`).textContent = short;
   });
+  // Populate model dropdowns based on source mode
+  _sourceMode = data.source || 'api';
+  const optMap = data.model_options || {};
+  const selMap = { melchior: 'modelInputM', balthasar: 'modelInputB', casper: 'modelInputC' };
+  const defaults = { melchior: data.melchior, balthasar: data.balthasar, casper: data.casper };
+  for (const [node, selId] of Object.entries(selMap)) {
+    const sel = document.getElementById(selId);
+    const opts = optMap[node] || [];
+    sel.innerHTML = '';
+    if (opts.length > 0) {
+      opts.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o; opt.textContent = o;
+        sel.appendChild(opt);
+      });
+      // Select default based on current value
+      const def = defaults[node] || '';
+      const match = opts.find(o => def.includes(o));
+      if (match) sel.value = match;
+    } else if (_sourceMode === 'api') {
+      sel.outerHTML = `<input class="model-input" id="${selId}" value="${defaults[node] || ''}" placeholder="model ID...">`;
+    } else {
+      const opt = document.createElement('option');
+      opt.value = ''; opt.textContent = defaults[node] || 'default';
+      sel.appendChild(opt);
+      sel.disabled = true;
+    }
+  }
+  // Populate judge dropdown
+  const judgeSel = document.getElementById('judgeModelSelect');
+  const judgeOpts = data.judge_options || [];
+  const judgeDefault = data.judge || '';
+  judgeSel.innerHTML = '';
+  if (judgeOpts.length > 0) {
+    judgeOpts.forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o;
+      opt.textContent = o.split('/').pop().replace(':free','');
+      judgeSel.appendChild(opt);
+    });
+    const match = judgeOpts.find(o => judgeDefault.includes(o) || o.includes(judgeDefault));
+    if (match) judgeSel.value = match;
+  } else {
+    const opt = document.createElement('option');
+    opt.value = ''; opt.textContent = judgeDefault.split('/').pop().replace(':free','') || 'default';
+    judgeSel.appendChild(opt);
+  }
+  document.getElementById('rvModelJudge').textContent = judgeDefault.split('/').pop().replace(':free','') || '-';
 }).catch(() => {});
 </script>
 </body>

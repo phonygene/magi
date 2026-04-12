@@ -5,11 +5,18 @@ from magi.protocols.critique import critique
 from magi.protocols.adaptive import adaptive
 from magi.trace.logger import TraceLogger
 import os
+import shutil
 
 
 class MAGI:
     """
     MAGI Disagreement OS — three LLMs, one decision.
+
+    Optimized with NeurIPS 2025 findings:
+    - ICE error-detection framing in critique rounds
+    - Parallel execution via asyncio.gather
+    - Synthesis phase for final ruling
+    - Cost tracking per decision
 
     Usage:
         engine = MAGI()  # uses defaults from env or config
@@ -33,8 +40,71 @@ class MAGI:
             MagiNode("balthasar", balthasar, p[1], timeout),
             MagiNode("casper", casper, p[2], timeout),
         ]
+        self._init_common(self.nodes, trace_dir)
+        self._cost_mode = "measured"  # default for API-based nodes
+
+    def _init_common(self, nodes: list, trace_dir: str | None = None):
+        """Shared initialization for all construction paths."""
+        self.nodes = nodes
         self.trace_dir = trace_dir or os.path.expanduser("~/.magi/traces")
         self._logger = TraceLogger(self.trace_dir)
+
+    @classmethod
+    def cli_multi(
+        cls,
+        personas: tuple[Persona, Persona, Persona] | None = None,
+        timeout: float = 600.0,
+        trace_dir: str | None = None,
+    ) -> "MAGI":
+        """Create MAGI with CLI-native nodes: claude + codex + gemini.
+
+        Zero provider API keys — uses CLI subscriptions/OAuth.
+        """
+        from magi.core.cli_adapters import ClaudeAdapter, CodexAdapter, GeminiAdapter
+        from magi.core.cli_node import CliNode
+
+        p = personas or (MELCHIOR, BALTHASAR, CASPER)
+        engine = cls.__new__(cls)
+        engine._init_common([
+            CliNode("melchior", p[0], ClaudeAdapter(model_tier="opus", effort="high"), timeout),
+            CliNode("balthasar", p[1], CodexAdapter(effort="high"), timeout),
+            CliNode("casper", p[2], GeminiAdapter(model="gemini-3-flash-preview", effort="medium"), timeout),
+        ], trace_dir)
+        engine._cost_mode = "mixed"
+        return engine
+
+    @classmethod
+    def cli_single(
+        cls,
+        personas: tuple[Persona, Persona, Persona] | None = None,
+        timeout: float = 600.0,
+        trace_dir: str | None = None,
+    ) -> "MAGI":
+        """Create MAGI with Claude-only CLI nodes at different tiers.
+
+        Only requires Claude subscription.
+        """
+        from magi.core.cli_adapters import ClaudeAdapter
+        from magi.core.cli_node import CliNode
+
+        p = personas or (MELCHIOR, BALTHASAR, CASPER)
+        engine = cls.__new__(cls)
+        engine._init_common([
+            CliNode("melchior", p[0], ClaudeAdapter(model_tier="opus", effort="high"), timeout),
+            CliNode("balthasar", p[1], ClaudeAdapter(model_tier="sonnet", effort="medium"), timeout),
+            CliNode("casper", p[2], ClaudeAdapter(model_tier="haiku", effort="low"), timeout),
+        ], trace_dir)
+        engine._cost_mode = "measured"
+        return engine
+
+    @staticmethod
+    def check_cli_availability() -> dict[str, bool]:
+        """Check which CLI tools are available on PATH."""
+        return {
+            "claude": shutil.which("claude") is not None,
+            "codex": shutil.which("codex") is not None,
+            "gemini": shutil.which("gemini") is not None,
+        }
 
     async def ask(self, query: str, mode: str = "vote") -> Decision:
         """
@@ -42,7 +112,6 @@ class MAGI:
         minority report, and full trace.
 
         Modes: "vote" (default), "critique", "adaptive", "escalate"
-        Only "vote" is implemented in MVP.
         """
         if mode == "vote":
             decision = await vote(query, self.nodes)
@@ -57,6 +126,22 @@ class MAGI:
             decision = await adaptive(query, self.nodes)
         else:
             raise NotImplementedError(f"Mode '{mode}' not yet implemented.")
+
+        # Aggregate cost from all nodes
+        decision.cost_usd = sum(n.last_cost_usd for n in self.nodes)
+
+        # Determine cost_mode from nodes
+        cost_mode = getattr(self, "_cost_mode", "measured")
+        if cost_mode == "mixed":
+            # Mixed CLI mode: determine from individual node cost_modes
+            modes = set(getattr(n, "cost_mode", "measured") for n in self.nodes)
+            if modes == {"measured"}:
+                cost_mode = "measured"
+            elif "unavailable" in modes:
+                cost_mode = "estimated"
+            else:
+                cost_mode = "estimated"
+        decision.cost_mode = cost_mode
 
         self._logger.log(decision)
         return decision

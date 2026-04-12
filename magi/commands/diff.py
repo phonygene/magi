@@ -93,7 +93,12 @@ def format_review_output(decision) -> str:
     lines.append("")
     lines.append(f"Trace ID: {decision.trace_id}")
     lines.append(f"Latency: {decision.latency_ms}ms")
-    if decision.cost_usd > 0:
+    cost_mode = getattr(decision, "cost_mode", "measured")
+    if cost_mode == "unavailable":
+        lines.append("Cost: N/A")
+    elif cost_mode == "estimated" and decision.cost_usd > 0:
+        lines.append(f"Cost: ~${decision.cost_usd:.4f} (est.)")
+    elif decision.cost_usd > 0:
         lines.append(f"Cost: ${decision.cost_usd:.4f}")
 
     return "\n".join(lines)
