@@ -123,6 +123,8 @@
   .vote-lamp.retryable { background: var(--red); box-shadow: 0 0 8px var(--red); animation: retry-pulse 1.5s infinite; }
   @keyframes retry-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
   .vote-lamp.synth { background: var(--synth-purple); box-shadow: 0 0 8px var(--synth-purple); }
+  /* REFINE: PARSE_ERROR tri-state warning lamp (yellow, Codex R9 #1 / R8-4) */
+  .vote-lamp.warning { background: #f5c242; color: #222; box-shadow: 0 0 8px #f5c242; }
   @keyframes lamp-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
 
   .vote-node-info { flex: 1; }
@@ -280,6 +282,7 @@
   .round-block.final-approve { border-color: #00dd66; background: #00dd66; }
   .round-block.final-reject { border-color: #ff2222; background: #ff2222; }
   .round-block.final-deadlock { border-color: #ff8800; background: #ff8800; }
+  .round-block.final-warning { border-color: #f5c242; background: #f5c242; color: #222; }
   .round-block.final-synth { border-color: var(--synth-purple); background: var(--synth-purple); }
   .round-content-node { margin-bottom: 10px; }
   .round-content-node .rcn-label {
@@ -333,6 +336,7 @@
         <option value="adaptive">ADAPTIVE</option>
         <option value="vote">VOTE</option>
         <option value="critique">CRITIQUE</option>
+        <option value="refine">REFINE</option>
         <option value="escalate">ESCALATE</option>
       </select>
       <div class="label" style="margin-top:6px">PRESET</div>
@@ -495,6 +499,16 @@ let activeRoundBlock = null;  // index into roundData[] or 'final'
 
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
+// R03 MAJOR-A: unified vote→lamp mapping for R9 #1 tri-state consistency.
+// PARSE_ERROR takes priority over failed_nodes abstain so parse-error
+// reviewers (which are ALSO listed in failed_nodes per R02 MAJOR-4) keep
+// their distinct warning lamp instead of being flattened to abstain.
+function mapVoteToLamp(answer, ruling, isRefine, isFailed) {
+  if (isRefine && answer === 'PARSE_ERROR') return 'warning';
+  if (isFailed) return 'abstain';
+  return (answer === ruling) ? 'approve' : 'reject';
+}
+
 function drawConnections() {
   const svg = document.getElementById('hexSvg');
   const area = document.querySelector('.hex-area');
@@ -598,8 +612,12 @@ function renderResultTab() {
       const votes = finalRuling.votes || {};
       const approveCount = Object.values(votes).filter(v => v === 'approve').length;
       const rejectCount = Object.values(votes).filter(v => v === 'reject').length;
+      // R03 MAJOR-A: finalRuling.votes now stores lamp states (via mapVoteToLamp),
+      // so count the mapped 'warning' label rather than raw 'PARSE_ERROR'.
+      const warningCount = Object.values(votes).filter(v => v === 'warning').length;
       if (approveCount >= 2) finalClass = 'final-approve';
       else if (rejectCount >= 2) finalClass = 'final-reject';
+      else if (warningCount > 0) finalClass = 'final-warning';
       else finalClass = 'final-deadlock';
     }
   }
@@ -927,24 +945,50 @@ function handleEvent(data) {
       const voteCount = Object.keys(data.votes || {}).length;
 
       const ruling = data.ruling || '';
+      const isRefine = data.protocol_used === 'refine';
+      const failedSet = new Set(data.failed_nodes || []);
       const nodeVotes = {};
       for (const [name, answer] of Object.entries(data.votes || {})) {
-        nodeVotes[name] = (answer === ruling) ? 'approve' : 'reject';
+        nodeVotes[name] = mapVoteToLamp(answer, ruling, isRefine, failedSet.has(name));
       }
-      (data.failed_nodes || []).forEach(n => { nodeVotes[n] = 'abstain'; });
+      // Failed node without an explicit vote → abstain (mapVoteToLamp only runs
+      // when a vote exists, so catch the no-vote failure case here).
+      failedSet.forEach(n => { if (!(n in nodeVotes)) nodeVotes[n] = 'abstain'; });
 
       const approveCount = Object.values(nodeVotes).filter(v => v === 'approve').length;
       const rejectCount = Object.values(nodeVotes).filter(v => v === 'reject').length;
+      const warningCount = Object.values(nodeVotes).filter(v => v === 'warning').length;
 
       for (const [name, vote] of Object.entries(nodeVotes)) {
         setLamp(name, vote);
-        const labels = { approve: '承認', reject: '否決', abstain: '棄権' };
+        const labels = { approve: '承認', reject: '否決', abstain: '棄権', warning: '解析不能' };
         document.getElementById(`vstat${cap(name)}`).textContent = labels[vote] || vote;
       }
 
       // Synthesized results always show as approved (ICE consensus)
       const isSynth = data.protocol_used.includes('synth');
-      if (isSynth) {
+      if (isRefine) {
+        // REFINE verdict driven by refine_summary.terminal_status (§10).
+        const summary = data.refine_summary || {};
+        const term = summary.terminal_status || 'converged';
+        const totalRounds = summary.total_rounds || 0;
+        const resolvedCount = summary.resolved || 0;
+        if (term === 'converged' || term === 'threshold') {
+          setVerdict('approve', '承認',
+            `REFINE ${term.toUpperCase()} — ${totalRounds} rounds, ${resolvedCount} resolved`);
+        } else if (term === 'aborted') {
+          setVerdict('reject', '中断',
+            `REFINE ABORTED — ${summary.abort_reason || 'unknown'}`);
+        } else if (term === 'cancelled') {
+          setVerdict('deadlock', '中止', 'REFINE CANCELLED — user/budget terminate');
+        } else if (term === 'budget') {
+          setVerdict('deadlock', '予算切', 'REFINE BUDGET EXCEEDED');
+        } else if (term === 'max_rounds') {
+          setVerdict('deadlock', '上限', `REFINE MAX_ROUNDS — ${summary.open || 0} still open`);
+        } else {
+          setVerdict('pending', '...', `REFINE ${term}`);
+        }
+      } else if (isSynth) {
         setVerdict('approve', '統合', 'SYNTHESIZED — ICE consensus reached');
         ['melchior','balthasar','casper'].forEach(n => {
           if (!data.failed_nodes?.includes(n)) { setLamp(n, 'approve'); }
@@ -960,12 +1004,35 @@ function handleEvent(data) {
       }
 
       let html = '';
-      if (isSynth) {
+      if (isRefine) {
+        html += '<div class="rl-label" style="color:var(--synth-purple)">精煉結果 REFINE</div>';
+      } else if (isSynth) {
         html += '<div class="rl-label" style="color:var(--synth-purple)">統合結果 SYNTHESIS</div>';
       } else {
         html += '<div class="rl-label">決議內容 RULING</div>';
       }
       html += `<div class="rl-text">${renderMd(data.ruling.substring(0, 3000))}</div>`;
+
+      // REFINE: attach refine_summary line (terminal_status / rounds / resolved / best_round).
+      if (isRefine && data.refine_summary) {
+        const s = data.refine_summary;
+        const parts = [
+          `status: ${s.terminal_status}`,
+          `rounds: ${s.total_rounds || 0}`,
+          `resolved: ${s.resolved || 0}`,
+          `partial: ${s.partial_resolved || 0}`,
+          `open: ${s.open || 0}`,
+          `parse_err: ${s.parse_errors || 0}`,
+        ];
+        if (s.best_round) parts.push(`best: R${s.best_round}`);
+        if (s.guided) parts.push(`guided (overrides: ${s.user_overrides_count || 0})`);
+        if (s.sycophancy_warning) parts.push('⚠ sycophancy');
+        html += `<div class="rl-label" style="color:var(--orange-dim)">${parts.join(' | ')}</div>`;
+        if (s.best_round_note) {
+          html += `<div class="rl-text" style="font-size:11px;color:var(--orange-dim)">${s.best_round_note}</div>`;
+        }
+      }
+
       if (data.minority_report) {
         html += '<div class="rl-label" style="color:var(--red)">反對意見 DISSENT</div>';
         html += `<div class="rl-minority">${renderMd(data.minority_report.substring(0, 2000))}</div>`;
@@ -976,11 +1043,15 @@ function handleEvent(data) {
       document.getElementById('rulingArea').innerHTML = html;
 
       // Store final ruling and show RESULT tab
+      // R03 MAJOR-A: route through mapVoteToLamp so PARSE_ERROR→warning
+      // survives into finalRuling.votes and is counted by renderResultTab.
+      const isRefineFinal = data.protocol_used === 'refine';
+      const failedSetFinal = new Set(data.failed_nodes || []);
       const nodeVotesSummary = {};
       for (const [name, answer] of Object.entries(data.votes || {})) {
-        nodeVotesSummary[name] = (answer === data.ruling) ? 'approve' : 'reject';
+        nodeVotesSummary[name] = mapVoteToLamp(answer, data.ruling, isRefineFinal, failedSetFinal.has(name));
       }
-      (data.failed_nodes || []).forEach(n => { nodeVotesSummary[n] = 'abstain'; });
+      failedSetFinal.forEach(n => { if (!(n in nodeVotesSummary)) nodeVotesSummary[n] = 'abstain'; });
       finalRuling = {
         ruling: data.ruling,
         protocol: data.protocol_used,
