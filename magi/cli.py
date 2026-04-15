@@ -65,19 +65,86 @@ def _format_cost(decision) -> str:
         return f" | Cost: ${decision.cost_usd:.6f}" if decision.cost_usd else ""
 
 
+def _build_stdin_prompter():
+    """H4: build an async UserReviewCallback that reads from stdin.
+
+    Prompts the operator with proposal + decisions summary, accepts one of
+    ``approve`` / ``override`` / ``terminate``. For ``override``, reads a
+    JSON array on the next line describing per-issue overrides.
+    """
+    from magi.protocols.refine_types import UserAction, UserOverride
+
+    async def _prompter(round_num: int, proposal: str, decisions: list[dict],
+                        issue_summary: dict):
+        click.echo(f"\n--- REFINE GUIDED review (round {round_num}) ---")
+        click.echo("Proposal:")
+        click.echo(proposal)
+        click.echo("\nDecisions:")
+        for d in decisions:
+            keys = ", ".join(d.get("source_issue_keys") or [])
+            click.echo(f"  [{d.get('verdict')}] {keys}: {d.get('reasoning', '')}")
+        click.echo("\nAction? [approve/override/terminate] (empty=terminate): ", nl=False)
+        # LOW#3: empty input or stdin failure → terminate (safer default, aligns with
+        # spec guided_timeout_policy='abort' — never silently approve on missing input).
+        try:
+            action = (sys.stdin.readline() or "").strip().lower()
+        except Exception:
+            action = ""
+        if not action:
+            return UserAction(action="terminate")
+
+        if action == "override":
+            click.echo("Override JSON (array of {issue_key, verdict, severity_after?}): ", nl=False)
+            try:
+                raw = sys.stdin.readline() or "[]"
+                overrides_data = __import__("json").loads(raw)
+            except Exception:
+                overrides_data = []
+            overrides = [
+                UserOverride(
+                    issue_key=str(o.get("issue_key", "")),
+                    verdict=str(o.get("verdict", "accept")),
+                    severity_after=o.get("severity_after"),
+                    reasoning=o.get("reasoning"),
+                )
+                for o in overrides_data if isinstance(o, dict)
+            ]
+            return UserAction(action="override", overrides=overrides)
+        if action == "terminate":
+            return UserAction(action="terminate")
+        return UserAction(action="approve")
+
+    return _prompter
+
+
 @main.command()
 @click.argument("query")
-@click.option("--mode", default="vote", type=click.Choice(["vote", "critique", "adaptive", "escalate"]))
+@click.option("--mode", default="vote",
+              type=click.Choice(["vote", "critique", "adaptive", "escalate", "refine"]))
+@click.option("--guided", is_flag=True,
+              help="REFINE only: pause each round for stdin approve/override/terminate")
 @click.option("--preset", default="eva", help="Persona preset (eva, code-review, research, writing, strategy, ice-debug, architecture)")
 @click.option("--source", default="api", type=click.Choice(["api", "cli-multi", "cli-single"]), help="Node backend: api (default), cli-multi (claude+codex+gemini), cli-single (claude only)")
 @click.option("--melchior", default=None, help="Model for Melchior node (api mode)")
 @click.option("--balthasar", default=None, help="Model for Balthasar node (api mode)")
 @click.option("--casper", default=None, help="Model for Casper node (api mode)")
-def ask(query: str, mode: str, preset: str, source: str, melchior: str, balthasar: str, casper: str):
+def ask(query: str, mode: str, guided: bool, preset: str, source: str,
+        melchior: str, balthasar: str, casper: str):
     """Ask MAGI a question. Three models deliberate, one decision emerges."""
+    if guided and mode != "refine":
+        click.echo("--guided is only valid with --mode refine", err=True)
+        sys.exit(1)
+
     engine = _build_engine(source, preset, melchior, balthasar, casper)
     try:
-        decision = asyncio.run(engine.ask(query, mode=mode))
+        if guided:
+            # R9 #2: --guided bypasses ask() (which only supports default config)
+            # and calls engine.refine() directly with a stdin-based callback.
+            from magi.protocols.refine_types import RefineConfig
+            cfg = RefineConfig(guided=True, on_user_review=_build_stdin_prompter())
+            decision = asyncio.run(engine.refine(query, config=cfg))
+        else:
+            decision = asyncio.run(engine.ask(query, mode=mode))
     except AuthenticationError as e:
         click.echo(f"Authentication error: {e}", err=True)
         sys.exit(1)
