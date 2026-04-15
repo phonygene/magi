@@ -17,6 +17,7 @@ class Decision:
     cost_usd: float = 0.0
     cost_mode: str = "measured"  # measured | estimated | unavailable
     trace_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
+    refine_summary: dict | None = None  # REFINE protocol summary (None for vote/critique/adaptive)
 
     def to_jsonl(self) -> str:
         return json.dumps(asdict(self), ensure_ascii=False)
