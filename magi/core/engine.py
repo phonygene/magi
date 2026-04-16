@@ -106,13 +106,32 @@ class MAGI:
             "gemini": shutil.which("gemini") is not None,
         }
 
+    def _resolve_cost_mode(self) -> str:
+        """Resolve the cost_mode for the current engine configuration.
+
+        H1: extracted from inline logic at engine.py:134-144. Pure refactor.
+        """
+        cost_mode = getattr(self, "_cost_mode", "measured")
+        if cost_mode == "mixed":
+            modes = set(getattr(n, "cost_mode", "measured") for n in self.nodes)
+            if modes == {"measured"}:
+                return "measured"
+            if "unavailable" in modes:
+                return "estimated"
+            return "estimated"
+        return cost_mode
+
     async def ask(self, query: str, mode: str = "vote") -> Decision:
         """
         Ask MAGI a question. Returns a Decision with ruling, confidence,
         minority report, and full trace.
 
-        Modes: "vote" (default), "critique", "adaptive", "escalate"
+        Modes: "vote" (default), "critique", "adaptive", "escalate", "refine"
         """
+        if mode == "refine":
+            # H3: dispatch to refine() with default RefineConfig.
+            return await self.refine(query)
+
         if mode == "vote":
             decision = await vote(query, self.nodes)
             # 3-way split with no majority → auto-escalate to critique
@@ -131,17 +150,26 @@ class MAGI:
         decision.cost_usd = sum(n.last_cost_usd for n in self.nodes)
 
         # Determine cost_mode from nodes
-        cost_mode = getattr(self, "_cost_mode", "measured")
-        if cost_mode == "mixed":
-            # Mixed CLI mode: determine from individual node cost_modes
-            modes = set(getattr(n, "cost_mode", "measured") for n in self.nodes)
-            if modes == {"measured"}:
-                cost_mode = "measured"
-            elif "unavailable" in modes:
-                cost_mode = "estimated"
-            else:
-                cost_mode = "estimated"
-        decision.cost_mode = cost_mode
+        decision.cost_mode = self._resolve_cost_mode()
 
+        self._logger.log(decision)
+        return decision
+
+    async def refine(
+        self,
+        query: str,
+        config=None,
+    ) -> Decision:
+        """H2: REFINE protocol entry point.
+
+        Cost aggregation is done per-call inside ``refine_protocol`` (not
+        via ``sum(n.last_cost_usd)``), avoiding the per-call overwrite bug.
+        """
+        from magi.protocols.refine import refine_protocol
+        from magi.protocols.refine_types import RefineConfig
+
+        cfg = config or RefineConfig()
+        decision = await refine_protocol(query, self.nodes, cfg, logger=self._logger)
+        decision.cost_mode = self._resolve_cost_mode()
         self._logger.log(decision)
         return decision
