@@ -1,0 +1,12 @@
+{"t":0,"agent":"ab85816","agent_type":"code-reviewer","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"a485670","agent_type":"verifier","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"a485670","agent_type":"verifier","event":"agent_stop","success":true,"duration_ms":242623}
+{"t":0,"agent":"ab85816","agent_type":"code-reviewer","event":"agent_stop","success":true,"duration_ms":6955442}
+{"t":0,"agent":"aba4477","agent_type":"unknown","event":"agent_stop","success":true}
+{"t":0,"agent":"adf5f85","agent_type":"git-master","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"adf5f85","agent_type":"git-master","event":"agent_stop","success":true,"duration_ms":1163318}
+{"t":0,"agent":"ace0a83","agent_type":"unknown","event":"agent_stop","success":true}
+{"t":0,"agent":"system","event":"skill_invoked","skill_name":"jStage"}
+{"t":0,"agent":"system","event":"skill_invoked","skill_name":"lcp"}
+{"t":0,"agent":"a521dd1","agent_type":"unknown","event":"agent_stop","success":true}
+{"t":0,"agent":"ac2d175","agent_type":"unknown","event":"agent_stop","success":true}

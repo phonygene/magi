@@ -1,0 +1,51 @@
+id: magi-refine-v4-p0
+type: code
+subject: MAGI REFINE V4 P0 實作成果（22 atomic tasks, 207 tests 全綠）
+scope:
+  spec_docs:
+    - C:\Projects\magi\.omc\plans\refine-mode-proposal-v4.md
+    - C:\Projects\magi\.omc\plans\ralplan-refine-v4.md
+  implementation_files:
+    - C:\Projects\magi\magi\core\decision.py
+    - C:\Projects\magi\magi\core\engine.py
+    - C:\Projects\magi\magi\cli.py
+    - C:\Projects\magi\magi\trace\logger.py
+    - C:\Projects\magi\magi\protocols\refine_types.py
+    - C:\Projects\magi\magi\protocols\refine_keys.py
+    - C:\Projects\magi\magi\protocols\refine_convergence.py
+    - C:\Projects\magi\magi\protocols\refine_collator.py
+    - C:\Projects\magi\magi\protocols\refine_prompts.py
+    - C:\Projects\magi\magi\protocols\refine.py
+    - C:\Projects\magi\magi\web\static\index.html
+  test_files:
+    - C:\Projects\magi\tests\test_decision.py
+    - C:\Projects\magi\tests\test_refine_unit.py
+    - C:\Projects\magi\tests\test_refine_integration.py
+  description: 比對凍結 spec 與實作，嚴格檢查錯誤/設計偏離/隱含風險
+dimensions:
+  - name: 規格符合度
+    description: 是否偏離 refine-mode-proposal-v4.md 凍結設計；特別檢查 R9 三偏離正確內化（#1 PARSE_ERROR 三態燈號、#2 CLI --guided 直呼 engine.refine() 不走 ask()、#3 沿用 Decision.trace_id 不新增 refine_trace_id）
+    weight: high
+  - name: 邏輯正確性
+    description: 4 態狀態機轉換（open/resolved/partial_resolved/reopened）、收斂優先序（ALL_RESOLVED > THRESHOLD > SILENCE+AUTO_RESOLVE > MAX_ROUNDS）、key canonicalize/merge/reconcile、per-call cost 聚合
+    weight: high
+  - name: 隱含風險
+    description: async race conditions、timeout 政策（abort/approve/reject）、parse_error 邊界（不計入 rejected_count）、fallback 路徑、budget/cancel 語意、best_round 復原、silence rule gated by ≥1 successful reviewer (R8-1)
+    weight: high
+  - name: 向後相容
+    description: Decision.asdict() / to_jsonl() append-only 不破壞、142 既有 tests 全綠、refine_summary 為 None 時序列化行為
+    weight: high
+  - name: 測試覆蓋完整性
+    description: 65 新 tests 是否真的覆蓋 spec 要求的所有分支；特別檢查 G2 main loop 所有終止路徑、G3 guided 4 種 action + timeout policies、D4 parse_error 分離
+    weight: medium
+  - name: 程式碼品質
+    description: 可讀性、命名一致性、死碼、過度抽象、錯誤訊息清晰度、comment 只留 WHY 不留 WHAT
+    weight: medium
+  - name: Prompt 注入防護
+    description: <SYSTEM_INSTRUCTION> / <UNTRUSTED_CONTENT> 隔離是否在 primary/reviewer/collator/reflection 四個 prompt 中一致套用
+    weight: medium
+role: 資深 Python/async 架構師 + AI 多模型協議設計者，熟悉 LLM 協議、dataclass 設計、pytest-asyncio、prompt engineering；負責找出錯誤、設計偏離、與隱含風險
+severity_levels: [CRITICAL, MAJOR, MINOR, NIT]
+language: 繁體中文
+reviewers: [codex, gemini]
+mode: manual_arbitration

@@ -1,0 +1,188 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1776086472282,
+  "projectRoot": "C:\\Projects\\magi",
+  "techStack": {
+    "languages": [
+      {
+        "name": "Python",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "pyproject.toml"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "fastapi",
+        "version": null,
+        "category": "backend"
+      },
+      {
+        "name": "pytest",
+        "version": null,
+        "category": "testing"
+      }
+    ],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": "pytest",
+    "lintCommand": "ruff check",
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "tests"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 1,
+      "lastAccessed": 1776086472210,
+      "keyFiles": [
+        "nerv-dashboard.png"
+      ]
+    },
+    "experiments": {
+      "path": "experiments",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1776086472213,
+      "keyFiles": [
+        "results-2026-03-28.txt",
+        "three_cobblers.py"
+      ]
+    },
+    "magi": {
+      "path": "magi",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1776086472214,
+      "keyFiles": [
+        "cli.py",
+        "__init__.py"
+      ]
+    },
+    "tests": {
+      "path": "tests",
+      "purpose": "Test files",
+      "fileCount": 15,
+      "lastAccessed": 1776086472215,
+      "keyFiles": [
+        "test_adaptive.py",
+        "test_analytics.py",
+        "test_bench.py",
+        "test_cli_adapters.py",
+        "test_cli_node.py"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "magi\\protocols\\refine.py",
+      "accessCount": 36,
+      "lastAccessed": 1776288939232,
+      "type": "file"
+    },
+    {
+      "path": "magi\\web\\static\\index.html",
+      "accessCount": 22,
+      "lastAccessed": 1776139229782,
+      "type": "file"
+    },
+    {
+      "path": "tests\\test_refine_integration.py",
+      "accessCount": 21,
+      "lastAccessed": 1776291096303,
+      "type": "file"
+    },
+    {
+      "path": "magi\\protocols\\refine_keys.py",
+      "accessCount": 13,
+      "lastAccessed": 1776291854683,
+      "type": "file"
+    },
+    {
+      "path": "tests\\test_refine_unit.py",
+      "accessCount": 11,
+      "lastAccessed": 1776227938217,
+      "type": "file"
+    },
+    {
+      "path": "magi\\protocols\\refine_types.py",
+      "accessCount": 8,
+      "lastAccessed": 1776227839997,
+      "type": "file"
+    },
+    {
+      "path": "magi\\protocols\\refine_convergence.py",
+      "accessCount": 5,
+      "lastAccessed": 1776227863229,
+      "type": "file"
+    },
+    {
+      "path": "tests",
+      "accessCount": 5,
+      "lastAccessed": 1776289021644,
+      "type": "directory"
+    },
+    {
+      "path": "magi\\protocols\\refine_prompts.py",
+      "accessCount": 4,
+      "lastAccessed": 1776227865423,
+      "type": "file"
+    },
+    {
+      "path": "magi\\cli.py",
+      "accessCount": 3,
+      "lastAccessed": 1776288970631,
+      "type": "file"
+    },
+    {
+      "path": "magi\\core\\decision.py",
+      "accessCount": 2,
+      "lastAccessed": 1776227839023,
+      "type": "directory"
+    },
+    {
+      "path": "",
+      "accessCount": 2,
+      "lastAccessed": 1776227889049,
+      "type": "directory"
+    },
+    {
+      "path": "magi",
+      "accessCount": 2,
+      "lastAccessed": 1776227891139,
+      "type": "directory"
+    },
+    {
+      "path": "magi\\protocols\\refine_collator.py",
+      "accessCount": 1,
+      "lastAccessed": 1776227862530,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

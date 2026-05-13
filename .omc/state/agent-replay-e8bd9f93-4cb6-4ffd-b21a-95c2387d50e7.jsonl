@@ -1,0 +1,9 @@
+{"t":0,"agent":"a4fcb5e","agent_type":"architect","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"a4fcb5e","agent_type":"architect","event":"agent_stop","success":true,"duration_ms":102926}
+{"t":0,"agent":"system","event":"skill_invoked","skill_name":"oh-my-claudecode:ai-slop-cleaner"}
+{"t":0,"agent":"system","event":"skill_invoked","skill_name":"oh-my-claudecode:cancel"}
+{"t":0,"agent":"ad6eaf0","agent_type":"unknown","event":"agent_stop","success":true}
+{"t":0,"agent":"ae7e718","agent_type":"executor","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"ae7e718","agent_type":"executor","event":"agent_stop","success":true,"duration_ms":383372}
+{"t":0,"agent":"a91cc46","agent_type":"executor","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"a91cc46","agent_type":"executor","event":"agent_stop","success":true,"duration_ms":231075}

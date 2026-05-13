@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="760" height="360" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif">
+  <rect width="760" height="360" fill="#f8f9fa"/>
+  <text x="380" y="28" text-anchor="middle" font-size="15" font-weight="bold" fill="#222">RouteLLM: Cheap-First Routing Architecture (LMSYS/Berkeley, 2024)</text>
+
+  <!-- Incoming query -->
+  <rect x="20" y="60" width="120" height="50" rx="8" fill="#cce5ff" stroke="#004085" stroke-width="1.8"/>
+  <text x="80" y="85" text-anchor="middle" font-size="11" font-weight="bold" fill="#004085">Query</text>
+  <text x="80" y="102" text-anchor="middle" font-size="9" fill="#004085">Any user request</text>
+  <line x1="140" y1="85" x2="185" y2="85" stroke="#333" stroke-width="1.8" marker-end="url(#ra)"/>
+
+  <!-- Router box -->
+  <rect x="185" y="50" width="160" height="70" rx="8" fill="#fff3cd" stroke="#856404" stroke-width="2"/>
+  <text x="265" y="78" text-anchor="middle" font-size="12" font-weight="bold" fill="#664d03">ROUTER</text>
+  <text x="265" y="95" text-anchor="middle" font-size="9" fill="#664d03">Lightweight classifier</text>
+  <text x="265" y="110" text-anchor="middle" font-size="9" fill="#664d03">(BERT / matrix factorization)</text>
+
+  <!-- Arrow: router -> weak model -->
+  <line x1="345" y1="75" x2="440" y2="55" stroke="#28a745" stroke-width="1.8" marker-end="url(#ra_green)"/>
+  <!-- Arrow: router -> strong model -->
+  <line x1="345" y1="95" x2="440" y2="130" stroke="#dc3545" stroke-width="1.8" marker-end="url(#ra_red)"/>
+
+  <!-- Weak model (cheap) -->
+  <rect x="440" y="30" width="155" height="55" rx="8" fill="#d4edda" stroke="#155724" stroke-width="1.8"/>
+  <text x="517" y="54" text-anchor="middle" font-size="11" font-weight="bold" fill="#155724">Weak (Cheap) Model</text>
+  <text x="517" y="70" text-anchor="middle" font-size="9" fill="#155724">Haiku / GPT-4o-mini</text>
+
+  <!-- Strong model (expensive) -->
+  <rect x="440" y="105" width="155" height="55" rx="8" fill="#f8d7da" stroke="#721c24" stroke-width="1.8"/>
+  <text x="517" y="129" text-anchor="middle" font-size="11" font-weight="bold" fill="#721c24">Strong (Expensive)</text>
+  <text x="517" y="145" text-anchor="middle" font-size="9" fill="#721c24">GPT-4 / Claude Opus</text>
+
+  <!-- Labels on arrows -->
+  <text x="400" y="58" font-size="9" fill="#28a745" font-weight="bold">Simple (62%)</text>
+  <text x="390" y="130" font-size="9" fill="#dc3545" font-weight="bold">Complex (38%)</text>
+
+  <!-- Output merge -->
+  <line x1="595" y1="57" x2="640" y2="90" stroke="#555" stroke-width="1.5" marker-end="url(#ra)"/>
+  <line x1="595" y1="132" x2="640" y2="100" stroke="#555" stroke-width="1.5" marker-end="url(#ra)"/>
+
+  <rect x="640" y="65" width="100" height="50" rx="8" fill="#e2d9f3" stroke="#6f42c1" stroke-width="1.8"/>
+  <text x="690" y="88" text-anchor="middle" font-size="11" font-weight="bold" fill="#6f42c1">Response</text>
+  <text x="690" y="105" text-anchor="middle" font-size="9" fill="#6f42c1">to user</text>
+
+  <!-- Confidence escalation -->
+  <rect x="185" y="180" width="410" height="140" rx="10" fill="#fff" stroke="#aaa" stroke-width="1.3"/>
+  <text x="390" y="202" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Performance Evidence (RouteLLM paper, 2024)</text>
+
+  <!-- Bar chart (text-based) -->
+  <text x="205" y="225" font-size="10" fill="#444">Benchmark</text>
+  <text x="340" y="225" font-size="10" fill="#444">Cost Reduction</text>
+  <text x="460" y="225" font-size="10" fill="#444">Quality Retained</text>
+
+  <line x1="200" y1="230" x2="590" y2="230" stroke="#ccc" stroke-width="1"/>
+
+  <text x="205" y="248" font-size="10" fill="#333">MT-Bench</text>
+  <rect x="340" y="238" width="100" height="12" rx="3" fill="#28a745"/>
+  <text x="445" y="249" font-size="10" fill="#28a745" font-weight="bold">85%</text>
+  <text x="490" y="249" font-size="10" fill="#333">95% of GPT-4</text>
+
+  <text x="205" y="268" font-size="10" fill="#333">MMLU</text>
+  <rect x="340" y="258" width="56" height="12" rx="3" fill="#28a745"/>
+  <text x="400" y="269" font-size="10" fill="#28a745" font-weight="bold">45%</text>
+  <text x="490" y="269" font-size="10" fill="#333">95% of GPT-4</text>
+
+  <text x="205" y="288" font-size="10" fill="#333">GSM8K</text>
+  <rect x="340" y="278" width="42" height="12" rx="3" fill="#ffc107"/>
+  <text x="386" y="289" font-size="10" fill="#856404" font-weight="bold">35%</text>
+  <text x="490" y="289" font-size="10" fill="#333">95% of GPT-4</text>
+
+  <text x="205" y="310" font-size="10" fill="#555" font-style="italic">Router uses Chatbot Arena preference data for training</text>
+
+  <defs>
+    <marker id="ra" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#333"/>
+    </marker>
+    <marker id="ra_green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#28a745"/>
+    </marker>
+    <marker id="ra_red" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#dc3545"/>
+    </marker>
+  </defs>
+</svg>

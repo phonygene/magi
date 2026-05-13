@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="760" height="480" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif">
+  <rect width="760" height="480" fill="#f8f9fa"/>
+  <text x="380" y="30" text-anchor="middle" font-size="15" font-weight="bold" fill="#222">Meta-Prompting Architecture (Suzgun &amp; Kalai, 2024)</text>
+
+  <!-- User box -->
+  <rect x="30" y="50" width="160" height="60" rx="8" fill="#cce5ff" stroke="#004085" stroke-width="2"/>
+  <text x="110" y="76" text-anchor="middle" font-size="11" font-weight="bold" fill="#004085">User Task</text>
+  <text x="110" y="94" text-anchor="middle" font-size="10" fill="#004085">(Natural Language)</text>
+
+  <!-- Arrow: user -> conductor -->
+  <line x1="190" y1="80" x2="265" y2="150" stroke="#333" stroke-width="1.8" marker-end="url(#arr)"/>
+
+  <!-- Conductor box -->
+  <rect x="265" y="130" width="230" height="90" rx="10" fill="#d4edda" stroke="#155724" stroke-width="2.5"/>
+  <text x="380" y="162" text-anchor="middle" font-size="12" font-weight="bold" fill="#155724">CONDUCTOR LLM</text>
+  <text x="380" y="180" text-anchor="middle" font-size="10" fill="#155724" font-style="italic">(same model instance)</text>
+  <text x="380" y="200" text-anchor="middle" font-size="10" fill="#155724">Decomposes tasks · Integrates results</text>
+
+  <!-- Arrows: conductor -> experts -->
+  <line x1="310" y1="220" x2="110" y2="310" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+  <line x1="380" y1="220" x2="380" y2="310" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+  <line x1="450" y1="220" x2="650" y2="310" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+
+  <!-- Expert A -->
+  <rect x="30" y="310" width="160" height="70" rx="8" fill="#fff3cd" stroke="#856404" stroke-width="1.8"/>
+  <text x="110" y="340" text-anchor="middle" font-size="11" font-weight="bold" fill="#664d03">Expert A</text>
+  <text x="110" y="358" text-anchor="middle" font-size="10" fill="#664d03">Persona: Mathematician</text>
+  <text x="110" y="373" text-anchor="middle" font-size="9" fill="#888">(same LLM, diff system prompt)</text>
+
+  <!-- Expert B -->
+  <rect x="295" y="310" width="170" height="70" rx="8" fill="#f8d7da" stroke="#721c24" stroke-width="1.8"/>
+  <text x="380" y="340" text-anchor="middle" font-size="11" font-weight="bold" fill="#721c24">Expert B</text>
+  <text x="380" y="358" text-anchor="middle" font-size="10" fill="#721c24">Persona: Programmer</text>
+  <text x="380" y="373" text-anchor="middle" font-size="9" fill="#888">(same LLM, diff system prompt)</text>
+
+  <!-- Expert C -->
+  <rect x="560" y="310" width="165" height="70" rx="8" fill="#d1ecf1" stroke="#0c5460" stroke-width="1.8"/>
+  <text x="642" y="340" text-anchor="middle" font-size="11" font-weight="bold" fill="#0c5460">Expert C</text>
+  <text x="642" y="358" text-anchor="middle" font-size="10" fill="#0c5460">Persona: Verifier</text>
+  <text x="642" y="373" text-anchor="middle" font-size="9" fill="#888">(same LLM, diff system prompt)</text>
+
+  <!-- Arrows: experts -> conductor (return) -->
+  <line x1="110" y1="310" x2="310" y2="220" stroke="#999" stroke-width="1.2" marker-end="url(#arrgray)"/>
+  <line x1="380" y1="310" x2="380" y2="220" stroke="#999" stroke-width="1.2" marker-end="url(#arrgray)"/>
+  <line x1="642" y1="310" x2="450" y2="220" stroke="#999" stroke-width="1.2" marker-end="url(#arrgray)"/>
+
+  <!-- Output box -->
+  <rect x="265" y="420" width="230" height="45" rx="8" fill="#e2d9f3" stroke="#6f42c1" stroke-width="2"/>
+  <text x="380" y="448" text-anchor="middle" font-size="11" font-weight="bold" fill="#6f42c1">Final Integrated Answer</text>
+
+  <!-- Arrow: conductor -> output -->
+  <line x1="380" y1="220" x2="380" y2="420" stroke="#6f42c1" stroke-width="2" marker-end="url(#arrpurple)"/>
+
+  <!-- Labels -->
+  <text x="210" y="270" text-anchor="middle" font-size="9" fill="#555" font-style="italic">delegate subtasks</text>
+  <text x="195" y="295" text-anchor="middle" font-size="9" fill="#999" font-style="italic">w/ expert personas</text>
+
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#333"/>
+    </marker>
+    <marker id="arrgray" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#999"/>
+    </marker>
+    <marker id="arrpurple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#6f42c1"/>
+    </marker>
+  </defs>
+</svg>

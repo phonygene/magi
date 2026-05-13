@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="760" height="380" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif">
+  <rect width="760" height="380" fill="#f8f9fa"/>
+  <text x="380" y="28" text-anchor="middle" font-size="15" font-weight="bold" fill="#222">NeMo Guardrails: Request Interception Pipeline (NVIDIA)</text>
+
+  <!-- User -->
+  <rect x="20" y="60" width="100" height="50" rx="8" fill="#cce5ff" stroke="#004085" stroke-width="1.8"/>
+  <text x="70" y="88" text-anchor="middle" font-size="11" font-weight="bold" fill="#004085">User</text>
+  <text x="70" y="104" text-anchor="middle" font-size="9" fill="#004085">Utterance</text>
+
+  <!-- Arrow -->
+  <line x1="120" y1="85" x2="155" y2="85" stroke="#333" stroke-width="1.8" marker-end="url(#ga)"/>
+
+  <!-- Stage 1: Input Rail -->
+  <rect x="155" y="50" width="130" height="70" rx="8" fill="#f8d7da" stroke="#721c24" stroke-width="1.8"/>
+  <text x="220" y="75" text-anchor="middle" font-size="11" font-weight="bold" fill="#721c24">Input Rail</text>
+  <text x="220" y="91" text-anchor="middle" font-size="9" fill="#721c24">Canonical form</text>
+  <text x="220" y="105" text-anchor="middle" font-size="9" fill="#721c24">generation (LLM)</text>
+
+  <!-- Arrow -->
+  <line x1="285" y1="85" x2="320" y2="85" stroke="#333" stroke-width="1.8" marker-end="url(#ga)"/>
+
+  <!-- Stage 2: Dialog Rail -->
+  <rect x="320" y="50" width="130" height="70" rx="8" fill="#fff3cd" stroke="#856404" stroke-width="1.8"/>
+  <text x="385" y="75" text-anchor="middle" font-size="11" font-weight="bold" fill="#664d03">Dialog Rail</text>
+  <text x="385" y="91" text-anchor="middle" font-size="9" fill="#664d03">Flow matching</text>
+  <text x="385" y="105" text-anchor="middle" font-size="9" fill="#664d03">via Colang</text>
+
+  <!-- Arrow -->
+  <line x1="450" y1="85" x2="485" y2="85" stroke="#333" stroke-width="1.8" marker-end="url(#ga)"/>
+
+  <!-- Stage 3: Main LLM -->
+  <rect x="485" y="50" width="130" height="70" rx="8" fill="#d4edda" stroke="#155724" stroke-width="2.2"/>
+  <text x="550" y="75" text-anchor="middle" font-size="11" font-weight="bold" fill="#155724">Main LLM</text>
+  <text x="550" y="91" text-anchor="middle" font-size="9" fill="#155724">Response</text>
+  <text x="550" y="105" text-anchor="middle" font-size="9" fill="#155724">generation</text>
+
+  <!-- Arrow -->
+  <line x1="615" y1="85" x2="650" y2="85" stroke="#333" stroke-width="1.8" marker-end="url(#ga)"/>
+
+  <!-- Stage 4: Output Rail -->
+  <rect x="650" y="50" width="95" height="70" rx="8" fill="#e2d9f3" stroke="#6f42c1" stroke-width="1.8"/>
+  <text x="697" y="75" text-anchor="middle" font-size="11" font-weight="bold" fill="#6f42c1">Output</text>
+  <text x="697" y="91" text-anchor="middle" font-size="11" font-weight="bold" fill="#6f42c1">Rail</text>
+  <text x="697" y="107" text-anchor="middle" font-size="9" fill="#6f42c1">Fact-check</text>
+
+  <!-- Reject branches -->
+  <line x1="220" y1="120" x2="220" y2="165" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ga_red)"/>
+  <rect x="155" y="165" width="130" height="35" rx="6" fill="#fce8e6" stroke="#c0392b" stroke-width="1.3"/>
+  <text x="220" y="187" text-anchor="middle" font-size="9" fill="#c0392b">REJECT / redirect</text>
+
+  <line x1="385" y1="120" x2="385" y2="165" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ga_red)"/>
+  <rect x="320" y="165" width="130" height="35" rx="6" fill="#fce8e6" stroke="#c0392b" stroke-width="1.3"/>
+  <text x="385" y="187" text-anchor="middle" font-size="9" fill="#c0392b">Use predefined response</text>
+
+  <line x1="697" y1="120" x2="697" y2="165" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ga_red)"/>
+  <rect x="640" y="165" width="105" height="35" rx="6" fill="#fce8e6" stroke="#c0392b" stroke-width="1.3"/>
+  <text x="692" y="187" text-anchor="middle" font-size="9" fill="#c0392b">BLOCK output</text>
+
+  <!-- Colang explanation box -->
+  <rect x="20" y="230" width="720" height="130" rx="10" fill="#fff" stroke="#aaa" stroke-width="1.3"/>
+  <text x="40" y="255" font-size="12" font-weight="bold" fill="#333">Colang Language (key concepts):</text>
+
+  <!-- Code-like examples -->
+  <rect x="40" y="265" width="320" height="80" rx="5" fill="#1e1e1e"/>
+  <text x="55" y="282" font-size="9" fill="#9cdcfe" font-family="Courier New,monospace">define user ask about competitors</text>
+  <text x="55" y="296" font-size="9" fill="#ce9178" font-family="Courier New,monospace">  "Tell me about OpenAI"</text>
+  <text x="55" y="310" font-size="9" fill="#ce9178" font-family="Courier New,monospace">  "What does Google AI do?"</text>
+  <text x="55" y="326" font-size="9" fill="#4ec9b0" font-family="Courier New,monospace">define flow block competitor questions</text>
+  <text x="55" y="340" font-size="9" fill="#9cdcfe" font-family="Courier New,monospace">  user ask about competitors</text>
+  <text x="55" y="354" font-size="9" fill="#dcdcaa" font-family="Courier New,monospace">  bot respond "I can't discuss that."</text>
+
+  <text x="380" y="282" font-size="10" fill="#444">5 guardrail types:</text>
+  <text x="380" y="298" font-size="9" fill="#555">1. Input rails — filter/transform user message</text>
+  <text x="380" y="312" font-size="9" fill="#555">2. Dialog rails — enforce conversation flow</text>
+  <text x="380" y="326" font-size="9" fill="#555">3. Retrieval rails — filter RAG chunks</text>
+  <text x="380" y="340" font-size="9" fill="#555">4. Execution rails — validate tool calls</text>
+  <text x="380" y="354" font-size="9" fill="#555">5. Output rails — post-process LLM response</text>
+
+  <defs>
+    <marker id="ga" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#333"/>
+    </marker>
+    <marker id="ga_red" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#c0392b"/>
+    </marker>
+  </defs>
+</svg>
